@@ -1,0 +1,58 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.16",
+    "version": "1.0.0",
+    "id": "{{BOT_APP_ID}}",
+    "developer": {
+        "name": "Lab Manager",
+        "websiteUrl": "https://github.com/kylehuang0323-ai/Lab-Manager-Agent-Storage",
+        "privacyUrl": "https://github.com/kylehuang0323-ai/Lab-Manager-Agent-Storage",
+        "termsOfUseUrl": "https://github.com/kylehuang0323-ai/Lab-Manager-Agent-Storage"
+    },
+    "name": {
+        "short": "Lab Manager",
+        "full": "Lab Manager's Agent for Storage"
+    },
+    "description": {
+        "short": "智能 Lab 库存管理助手",
+        "full": "通过自然语言对话管理 Lab 的物料、礼品和资产。支持入库、出库、查询库存、生成报表等操作。"
+    },
+    "icons": {
+        "outline": "outline.png",
+        "color": "color.png"
+    },
+    "accentColor": "#4F46E5",
+    "bots": [
+        {
+            "botId": "{{BOT_APP_ID}}",
+            "scopes": ["personal", "team", "groupChat"],
+            "commandLists": [
+                {
+                    "scopes": ["personal", "team", "groupChat"],
+                    "commands": [
+                        {
+                            "title": "帮助",
+                            "description": "查看所有可用命令和功能"
+                        },
+                        {
+                            "title": "库存概览",
+                            "description": "查看库存总览（商品数、总量、低库存告警）"
+                        },
+                        {
+                            "title": "低库存",
+                            "description": "查看低于最低库存的商品"
+                        },
+                        {
+                            "title": "清除对话",
+                            "description": "清除当前对话历史"
+                        }
+                    ]
+                }
+            ],
+            "supportsFiles": false,
+            "isNotificationOnly": false
+        }
+    ],
+    "permissions": ["identity", "messageTeamMembers"],
+    "validDomains": []
+}
