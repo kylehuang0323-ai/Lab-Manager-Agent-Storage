@@ -4,12 +4,14 @@ Flask 主应用 — 提供 Web 管理后台 + Agent 对话 API
 """
 
 from flask import Flask, render_template, jsonify, request, session, send_file
+import os
 
 import config
 import agent_engine
 import inventory_manager as im
 import report_generator as rg
 import alert_service
+import batch_importer
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
@@ -170,6 +172,45 @@ def api_alert_stream():
     from flask import Response
     return Response(generate(), mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# --------------------------------------------------
+# 批量导入 API
+# --------------------------------------------------
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@app.route("/api/import/template")
+def api_import_template():
+    """下载导入模板"""
+    path = batch_importer.generate_template()
+    return send_file(path, as_attachment=True, download_name="import_template.xlsx")
+
+
+@app.route("/api/import/upload", methods=["POST"])
+def api_import_upload():
+    """上传 Excel 批量导入"""
+    if "file" not in request.files:
+        return jsonify({"error": "请上传文件"}), 400
+
+    file = request.files["file"]
+    if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
+        return jsonify({"error": "仅支持 .xlsx 文件"}), 400
+
+    filepath = os.path.join(UPLOAD_DIR, f"import_{int(__import__('time').time())}.xlsx")
+    file.save(filepath)
+
+    result = batch_importer.batch_import(filepath)
+
+    # 清理上传文件
+    try:
+        os.remove(filepath)
+    except OSError:
+        pass
+
+    return jsonify(result)
 
 
 # --------------------------------------------------
