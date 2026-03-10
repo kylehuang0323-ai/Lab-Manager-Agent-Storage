@@ -255,6 +255,7 @@
                         <tr>
                             <th data-i18n="thAssetId">资产ID</th><th data-i18n="thName">名称</th><th data-i18n="thCategory">分类</th><th data-i18n="thModel">型号</th>
                             <th>SN</th><th data-i18n="thStatus">状态</th><th data-i18n="thAssignee">使用人</th><th data-i18n="thLocation">位置</th>
+                            <th data-i18n="thStartDate">启用日期</th><th data-i18n="thDisposeDate">报废日期</th><th></th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -363,6 +364,55 @@
         <div class="modal-footer">
             <button class="btn btn-ghost" onclick="closeSapImportModal()" data-i18n="btnCancel">取消</button>
             <button class="btn btn-primary" id="sapImportBtn" onclick="submitSapImport()" disabled data-i18n="btnStartImport">开始导入</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== Modal: Edit Asset ====== -->
+<div class="modal-overlay" id="editAssetModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 data-i18n="editAssetTitle">编辑资产</h3>
+            <button class="modal-close" onclick="closeEditAssetModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editAssetId">
+            <div class="form-group">
+                <label data-i18n="lblAssignee">使用人</label>
+                <input type="text" id="editAssignee">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblBuilding">楼宇</label>
+                    <input type="text" id="editBuilding">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="lblRoom">房间</label>
+                    <input type="text" id="editRoom">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblLocationDetail">位置详情</label>
+                <input type="text" id="editLocationDetail">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label data-i18n="lblStartDate">启用日期</label>
+                    <input type="date" id="editStartDate" class="date-input">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="lblDisposeDate">报废日期</label>
+                    <input type="date" id="editDisposeDate" class="date-input">
+                </div>
+            </div>
+            <div class="form-group">
+                <label data-i18n="lblNotes">备注</label>
+                <input type="text" id="editNotes">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeEditAssetModal()" data-i18n="btnCancel">取消</button>
+            <button class="btn btn-primary" onclick="submitEditAsset()" data-i18n="btnSave">保存</button>
         </div>
     </div>
 </div>

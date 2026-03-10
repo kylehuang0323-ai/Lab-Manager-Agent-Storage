@@ -36,6 +36,8 @@ ASSET_HEADERS = [
     "currency",          # 币种
     "po_number",         # PO 订单号
     "purchase_date",     # 采购/入资日期
+    "start_date",        # 启用日期
+    "dispose_date",      # 报废日期
     "useful_life",       # 使用年限
     "last_inventory_date",  # 最近盘点日期
     "processor",         # 处理器 (IT 资产)
@@ -235,9 +237,10 @@ def assign_asset(asset_id: str, to_person: str, operator: str = "系统", note: 
     from_person = str(asset.get("assigned_to", "") or "")
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    _update_row(ASSET_FILE, ASSET_HEADERS, "asset_id", asset_id, {
-        "assigned_to": to_person, "status": "在用", "updated_at": now,
-    })
+    updates = {"assigned_to": to_person, "status": "在用", "updated_at": now}
+    if not asset.get("start_date"):
+        updates["start_date"] = now.split(" ")[0]
+    _update_row(ASSET_FILE, ASSET_HEADERS, "asset_id", asset_id, updates)
 
     tx_id = _next_id(ASSET_TX_FILE, ASSET_TX_HEADERS, "tx_id", "ATX")
     tx = {
@@ -313,7 +316,7 @@ def dispose_asset(asset_id: str, operator: str = "系统", note: str = "") -> di
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _update_row(ASSET_FILE, ASSET_HEADERS, "asset_id", asset_id, {
-        "status": "报废", "assigned_to": "", "updated_at": now,
+        "status": "报废", "assigned_to": "", "dispose_date": now.split(" ")[0], "updated_at": now,
     })
 
     tx_id = _next_id(ASSET_TX_FILE, ASSET_TX_HEADERS, "tx_id", "ATX")
