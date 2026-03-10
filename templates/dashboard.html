@@ -24,6 +24,9 @@
         <a href="#" class="nav-item" data-view="transactions">
             <span class="nav-icon">📋</span><span class="nav-label">出入库记录</span>
         </a>
+        <a href="#" class="nav-item" data-view="assets">
+            <span class="nav-icon">🖥️</span><span class="nav-label">资产管理</span>
+        </a>
         <a href="#" class="nav-item" data-view="chat">
             <span class="nav-icon">🤖</span><span class="nav-label">AI 助手</span>
         </a>
@@ -182,6 +185,84 @@
         </div>
     </section>
 
+    <!-- ========== View: Assets ========== -->
+    <section class="view" id="view-assets">
+        <div class="view-header">
+            <h2>资产管理</h2>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openSapImportModal()">📤 导入 SAP 报表</button>
+                <button class="btn btn-ghost" onclick="loadAssets()">🔄 刷新</button>
+            </div>
+        </div>
+
+        <!-- Asset stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🖥️</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statAssetTotal">—</span>
+                    <span class="stat-label">资产总数</span>
+                </div>
+            </div>
+            <div class="stat-card card-success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statAssetInUse">—</span>
+                    <span class="stat-label">在用</span>
+                </div>
+            </div>
+            <div class="stat-card card-info">
+                <div class="stat-icon">💤</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statAssetIdle">—</span>
+                    <span class="stat-label">闲置</span>
+                </div>
+            </div>
+            <div class="stat-card card-warning">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statAssetOther">—</span>
+                    <span class="stat-label">维修/借出/报废</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="assetSearchInput" placeholder="搜索名称 / 编号 / SN / 使用人…" autocomplete="off">
+            </div>
+            <select id="assetCategoryFilter" class="filter-select">
+                <option value="">全部分类</option>
+            </select>
+            <select id="assetStatusFilter" class="filter-select">
+                <option value="">全部状态</option>
+                <option value="在用">在用</option>
+                <option value="闲置">闲置</option>
+                <option value="维修">维修</option>
+                <option value="借出">借出</option>
+                <option value="报废">报废</option>
+            </select>
+        </div>
+
+        <!-- Asset table -->
+        <div class="panel">
+            <div class="panel-body table-wrap">
+                <table class="data-table" id="assetTable">
+                    <thead>
+                        <tr>
+                            <th>资产ID</th><th>名称</th><th>分类</th><th>型号</th>
+                            <th>SN</th><th>状态</th><th>使用人</th><th>位置</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="empty-state" id="assetEmpty" style="display:none;">暂无资产数据，请先导入 SAP 报表</div>
+            </div>
+        </div>
+    </section>
+
     <!-- ========== View: AI Chat ========== -->
     <section class="view" id="view-chat">
         <div class="view-header">
@@ -255,6 +336,32 @@
         <div class="modal-footer">
             <button class="btn btn-ghost" onclick="closeCreateItemModal()">取消</button>
             <button class="btn btn-primary" onclick="submitCreateItem()">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== Modal: SAP Import ====== -->
+<div class="modal-overlay" id="sapImportModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>📤 导入 SAP 固资报表</h3>
+            <button class="modal-close" onclick="closeSapImportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                上传从 SAP 导出的固资明细 Excel 文件（.xlsx），系统将自动识别格式并导入。
+            </p>
+            <div class="file-drop-zone" id="sapDropZone">
+                <div class="file-drop-icon">📁</div>
+                <p>拖拽文件到此处 或 <label class="file-browse-label" for="sapFileInput">浏览文件</label></p>
+                <input type="file" id="sapFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleSapFileSelect()">
+                <p id="sapFileName" class="file-name-display" style="display:none;"></p>
+            </div>
+            <div id="sapImportResult" style="display:none; margin-top: 16px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeSapImportModal()">取消</button>
+            <button class="btn btn-primary" id="sapImportBtn" onclick="submitSapImport()" disabled>开始导入</button>
         </div>
     </div>
 </div>

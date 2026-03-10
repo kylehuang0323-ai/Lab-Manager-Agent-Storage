@@ -12,6 +12,7 @@ import inventory_manager as im
 import report_generator as rg
 import alert_service
 import batch_importer
+import asset_manager as am
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
@@ -210,6 +211,77 @@ def api_import_upload():
     except OSError:
         pass
 
+    return jsonify(result)
+
+
+# --------------------------------------------------
+# 资产管理 REST API
+# --------------------------------------------------
+
+@app.route("/api/assets")
+def api_assets():
+    am.init_asset_files()
+    assets = am.get_all_assets()
+    return jsonify({"assets": assets, "total": len(assets)})
+
+
+@app.route("/api/assets/<asset_id>")
+def api_asset_detail(asset_id):
+    asset = am.get_asset(asset_id)
+    if not asset:
+        return jsonify({"error": "资产不存在"}), 404
+    return jsonify(asset)
+
+
+@app.route("/api/assets/search")
+def api_asset_search():
+    keyword = request.args.get("q", "")
+    results = am.search_assets(keyword) if keyword else am.get_all_assets()
+    return jsonify({"assets": results, "total": len(results)})
+
+
+@app.route("/api/assets/summary")
+def api_asset_summary():
+    am.init_asset_files()
+    return jsonify(am.get_asset_summary())
+
+
+@app.route("/api/assets/categories")
+def api_asset_categories():
+    return jsonify({"categories": am.get_asset_categories()})
+
+
+@app.route("/api/assets/by-status")
+def api_assets_by_status():
+    status = request.args.get("status", "在用")
+    return jsonify({"assets": am.get_assets_by_status(status)})
+
+
+@app.route("/api/assets/transactions")
+def api_asset_tx():
+    asset_id = request.args.get("asset_id")
+    tx_type = request.args.get("type")
+    limit = int(request.args.get("limit", 50))
+    records = am.get_asset_transactions(asset_id=asset_id, tx_type=tx_type, limit=limit)
+    return jsonify({"records": records, "total": len(records)})
+
+
+@app.route("/api/assets/import-sap", methods=["POST"])
+def api_import_sap():
+    """导入 SAP 固资报表"""
+    if "file" not in request.files:
+        return jsonify({"error": "请上传文件"}), 400
+    file = request.files["file"]
+    if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
+        return jsonify({"error": "仅支持 .xlsx 文件"}), 400
+
+    filepath = os.path.join(UPLOAD_DIR, f"sap_import_{int(__import__('time').time())}.xlsx")
+    file.save(filepath)
+    result = am.import_sap_excel(filepath)
+    try:
+        os.remove(filepath)
+    except OSError:
+        pass
     return jsonify(result)
 
 
