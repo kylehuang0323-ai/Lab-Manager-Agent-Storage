@@ -102,6 +102,18 @@ a { color: var(--accent-light); text-decoration: none; }
 .sidebar-footer {
     padding: 1rem 1.2rem;
     border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+
+.lang-toggle {
+    width: 100%;
+    justify-content: center;
+    font-size: .8rem;
+    padding: .45rem .6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
 }
 
 .server-status {

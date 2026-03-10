@@ -69,10 +69,10 @@ async function checkHealth() {
     try {
         await api('/api/health');
         el.className = 'server-status online';
-        el.querySelector('.status-text').textContent = '服务运行中';
+        el.querySelector('.status-text').textContent = t('serverOnline');
     } catch {
         el.className = 'server-status offline';
-        el.querySelector('.status-text').textContent = '连接失败';
+        el.querySelector('.status-text').textContent = t('serverOffline');
     }
 }
 
@@ -127,8 +127,8 @@ function renderRecentTxTable(records) {
             <td>${esc(r.tx_id)}</td>
             <td>${esc(r.item_name)}</td>
             <td>${r.type === 'in'
-                ? '<span class="badge badge-green">入库</span>'
-                : '<span class="badge badge-red">出库</span>'}</td>
+                ? `<span class="badge badge-green">${t('badgeIn')}</span>`
+                : `<span class="badge badge-red">${t('badgeOut')}</span>`}</td>
             <td>${esc(r.quantity)}</td>
             <td>${esc(r.operator)}</td>
             <td>${esc(r.timestamp)}</td>
@@ -139,16 +139,16 @@ function renderRecentTxTable(records) {
 function renderLowStockPanel(items) {
     const panel = document.getElementById('dashLowStockList');
     if (!items.length) {
-        panel.innerHTML = '<div class="empty-state">✅ 暂无低库存告警</div>';
+        panel.innerHTML = `<div class="empty-state">${t('noLowStock')}</div>`;
         return;
     }
     panel.innerHTML = items.map(i => `
         <div class="alert-item">
             <div>
                 <span class="alert-item-name">${esc(i.name)}</span>
-                <span class="alert-item-meta">（最低 ${esc(i.min_stock)}）</span>
+                <span class="alert-item-meta">（${t('alertMin')} ${esc(i.min_stock)}）</span>
             </div>
-            <span class="alert-item-qty">剩余 ${esc(i.quantity)} ${esc(i.unit)}</span>
+            <span class="alert-item-qty">${t('alertRemain')} ${esc(i.quantity)} ${esc(i.unit)}</span>
         </div>
     `).join('');
 }
@@ -171,7 +171,7 @@ async function loadInventory() {
         // populate category filter
         const sel = document.getElementById('invCategoryFilter');
         const current = sel.value;
-        sel.innerHTML = '<option value="">全部分类</option>';
+        sel.innerHTML = `<option value="">${t('optAllCategories')}</option>`;
         (catRes.categories || []).forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -180,7 +180,7 @@ async function loadInventory() {
         });
         sel.value = current;
     } catch (e) {
-        toast('加载库存失败: ' + e.message, 'error');
+        toast(t('loadInvFail') + ': ' + e.message, 'error');
     }
 }
 
@@ -197,9 +197,9 @@ function renderInventoryTable(items) {
         const qty = parseInt(i.quantity) || 0;
         const min = parseInt(i.min_stock) || 0;
         let statusBadge;
-        if (qty === 0) statusBadge = '<span class="badge badge-red">缺货</span>';
-        else if (min > 0 && qty < min) statusBadge = '<span class="badge badge-yellow">低库存</span>';
-        else statusBadge = '<span class="badge badge-green">正常</span>';
+        if (qty === 0) statusBadge = `<span class="badge badge-red">${t('badgeOutOfStock')}</span>`;
+        else if (min > 0 && qty < min) statusBadge = `<span class="badge badge-yellow">${t('badgeLowStock')}</span>`;
+        else statusBadge = `<span class="badge badge-green">${t('badgeNormal')}</span>`;
 
         return `<tr>
             <td>${esc(i.item_id)}</td>
@@ -260,7 +260,7 @@ async function submitCreateItem() {
     const location = document.getElementById('newItemLocation').value.trim();
 
     if (!name || !category) {
-        toast('请填写名称和分类', 'error');
+        toast(t('validNameCat'), 'error');
         return;
     }
 
@@ -272,7 +272,7 @@ async function submitCreateItem() {
             body: JSON.stringify({ message: msg }),
         }).then(r => r.json());
 
-        toast('商品创建成功', 'success');
+        toast(t('toastCreateSuccess'), 'success');
         closeCreateItemModal();
         // clear form
         ['newItemName', 'newItemCategory', 'newItemLocation'].forEach(id => document.getElementById(id).value = '');
@@ -281,7 +281,7 @@ async function submitCreateItem() {
         document.getElementById('newItemUnit').value = '个';
         loadInventory();
     } catch (e) {
-        toast('创建失败: ' + e.message, 'error');
+        toast(t('toastCreateFail') + ': ' + e.message, 'error');
     }
 }
 
@@ -312,7 +312,7 @@ async function loadTransactions() {
 
         renderTransactionsTable(records);
     } catch (e) {
-        toast('加载记录失败: ' + e.message, 'error');
+        toast(t('loadTxFail') + ': ' + e.message, 'error');
     }
 }
 
@@ -330,8 +330,8 @@ function renderTransactionsTable(records) {
             <td>${esc(r.tx_id)}</td>
             <td>${esc(r.item_name)}</td>
             <td>${r.type === 'in'
-                ? '<span class="badge badge-green">入库</span>'
-                : '<span class="badge badge-red">出库</span>'}</td>
+                ? `<span class="badge badge-green">${t('badgeIn')}</span>`
+                : `<span class="badge badge-red">${t('badgeOut')}</span>`}</td>
             <td>${esc(r.quantity)}</td>
             <td>${esc(r.operator)}</td>
             <td>${esc(r.recipient) || '—'}</td>
@@ -345,7 +345,7 @@ function renderTransactionsTable(records) {
 // ──────────────────────────────────────────────
 
 async function exportReport(type) {
-    toast('正在生成报表…', 'info');
+    toast(t('toastGenerating'), 'info');
     try {
         const res = await fetch('/api/report/export', {
             method: 'POST',
@@ -354,7 +354,7 @@ async function exportReport(type) {
         });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || '导出失败');
+            throw new Error(err.error || t('toastExportFail'));
         }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -367,9 +367,9 @@ async function exportReport(type) {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        toast('报表已下载', 'success');
+        toast(t('toastDownloaded'), 'success');
     } catch (e) {
-        toast('导出失败: ' + e.message, 'error');
+        toast(t('toastExportFail') + ': ' + e.message, 'error');
     }
 }
 
@@ -402,7 +402,7 @@ async function loadAssets() {
         // category filter
         const sel = document.getElementById('assetCategoryFilter');
         const current = sel.value;
-        sel.innerHTML = '<option value="">全部分类</option>';
+        sel.innerHTML = `<option value="">${t('optAllCategories')}</option>`;
         (catRes.categories || []).forEach(c => {
             const opt = document.createElement('option');
             opt.value = c; opt.textContent = c;
@@ -410,7 +410,7 @@ async function loadAssets() {
         });
         sel.value = current;
     } catch (e) {
-        toast('加载资产失败: ' + e.message, 'error');
+        toast(t('loadAssetFail') + ': ' + e.message, 'error');
     }
 }
 
@@ -525,7 +525,7 @@ async function submitSapImport() {
     if (!sapSelectedFile) return;
     const btn = document.getElementById('sapImportBtn');
     btn.disabled = true;
-    btn.textContent = '导入中…';
+    btn.textContent = t('btnImporting');
 
     const form = new FormData();
     form.append('file', sapSelectedFile);
@@ -539,21 +539,21 @@ async function submitSapImport() {
         if (data.success > 0) {
             resultEl.innerHTML = `
                 <div class="import-result success">
-                    ✅ 成功导入 <strong>${data.success}</strong> 项资产
-                    ${data.skipped ? `，跳过 ${data.skipped} 项（已存在/空行）` : ''}
-                    ${data.errors.length ? `<br>⚠️ ${data.errors.length} 项错误` : ''}
+                    ✅ ${t('sapSuccess')} <strong>${data.success}</strong> ${t('sapItems')}
+                    ${data.skipped ? `，${t('sapSkipped')} ${data.skipped} ${t('sapSkippedReason')}` : ''}
+                    ${data.errors.length ? `<br>⚠️ ${data.errors.length} ${t('sapErrors')}` : ''}
                 </div>`;
-            toast(`已导入 ${data.success} 项资产`, 'success');
+            toast(`${t('toastImported')} ${data.success} ${t('sapItems')}`, 'success');
             loadAssets();
         } else {
-            resultEl.innerHTML = `<div class="import-result error">❌ 导入失败：${data.errors.join('; ')}</div>`;
-            toast('导入失败', 'error');
+            resultEl.innerHTML = `<div class="import-result error">❌ ${t('sapFail')}：${data.errors.join('; ')}</div>`;
+            toast(t('toastImportFail'), 'error');
         }
     } catch (e) {
-        toast('导入失败: ' + e.message, 'error');
+        toast(t('toastImportFail') + ': ' + e.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = '开始导入';
+        btn.textContent = t('btnStartImport');
     }
 }
 
@@ -590,7 +590,7 @@ async function sendChatMessage() {
     chatSendBtn.disabled = true;
 
     // loading indicator
-    const loadingEl = appendMsg('agent', '思考中…', true);
+    const loadingEl = appendMsg('agent', t('chatThinking'), true);
 
     try {
         const res = await api('/api/chat', {
@@ -611,7 +611,7 @@ async function sendChatMessage() {
         appendMsg('agent', res.reply);
     } catch (e) {
         loadingEl.remove();
-        appendMsg('agent', '❌ 请求失败: ' + e.message);
+        appendMsg('agent', t('chatError') + ': ' + e.message);
     } finally {
         chatSendBtn.disabled = false;
         chatInput.focus();
@@ -636,7 +636,7 @@ function appendToolCall(tc, result) {
     const div = document.createElement('div');
     div.className = 'tool-call-indicator';
     const name = typeof tc === 'string' ? tc : (tc.name || tc.function?.name || 'tool');
-    div.innerHTML = `<span class="tool-icon">⚙️</span> 调用工具: <strong>${esc(name)}</strong>`;
+    div.innerHTML = `<span class="tool-icon">⚙️</span> ${t('toolCallLabel')}: <strong>${esc(name)}</strong>`;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -647,18 +647,18 @@ async function clearChat() {
         chatMessages.innerHTML = `
             <div class="chat-welcome">
                 <div class="chat-welcome-icon">🤖</div>
-                <h3>你好，我是 Lab Manager AI 助手</h3>
-                <p>你可以用自然语言来管理库存，例如：</p>
+                <h3 data-i18n="chatWelcomeTitle">${t('chatWelcomeTitle')}</h3>
+                <p data-i18n="chatWelcomeDesc">${t('chatWelcomeDesc')}</p>
                 <div class="chat-suggestions">
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">查看所有库存</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">入库 50 个鼠标</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">哪些商品库存不足？</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">导出库存报表</button>
+                    <button class="suggestion-chip" data-i18n="chipViewAll" onclick="sendSuggestion(this)">${t('chipViewAll')}</button>
+                    <button class="suggestion-chip" data-i18n="chipStockIn" onclick="sendSuggestion(this)">${t('chipStockIn')}</button>
+                    <button class="suggestion-chip" data-i18n="chipLowStock" onclick="sendSuggestion(this)">${t('chipLowStock')}</button>
+                    <button class="suggestion-chip" data-i18n="chipExport" onclick="sendSuggestion(this)">${t('chipExport')}</button>
                 </div>
             </div>`;
-        toast('对话已清除', 'success');
+        toast(t('chatCleared'), 'success');
     } catch (e) {
-        toast('清除失败: ' + e.message, 'error');
+        toast(t('chatClearFail') + ': ' + e.message, 'error');
     }
 }
 
@@ -667,6 +667,7 @@ async function clearChat() {
 // ──────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyI18n();
     checkHealth();
     refreshDashboard();
     setInterval(checkHealth, 30000);
