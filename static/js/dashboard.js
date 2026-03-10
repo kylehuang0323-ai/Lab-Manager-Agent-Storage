@@ -82,10 +82,11 @@ async function checkHealth() {
 
 async function refreshDashboard() {
     try {
-        const [invRes, lowRes, txRes] = await Promise.all([
+        const [invRes, lowRes, txRes, txAllRes] = await Promise.all([
             api('/api/inventory').then(r => r.json()),
             api('/api/inventory/low-stock').then(r => r.json()),
             api('/api/transactions?limit=10').then(r => r.json()),
+            api('/api/transactions?limit=500').then(r => r.json()),
         ]);
 
         const items = invRes.items || [];
@@ -108,6 +109,10 @@ async function refreshDashboard() {
 
         // low stock panel
         renderLowStockPanel(lowItems);
+
+        // charts
+        renderInvCategoryChart(items);
+        renderTxTrendChart(txAllRes.records || []);
     } catch (e) {
         console.error('Dashboard refresh error:', e);
     }
@@ -410,6 +415,10 @@ async function loadAssets() {
             sel.appendChild(opt);
         });
         sel.value = current;
+
+        // charts
+        renderAssetCategoryChart(summaryRes);
+        renderAssetStatusChart(summaryRes);
     } catch (e) {
         toast(t('loadAssetFail') + ': ' + e.message, 'error');
     }

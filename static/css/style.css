@@ -745,3 +745,35 @@ a { color: var(--accent-light); text-decoration: none; }
 /* extra stat card colors */
 .stat-card.card-success:hover { border-color: rgba(52,211,153,.3); box-shadow: 0 0 20px rgba(52,211,153,.12); }
 .stat-card.card-info:hover { border-color: rgba(96,165,250,.3); box-shadow: 0 0 20px rgba(96,165,250,.12); }
+
+/* ==========================================================
+   Charts
+   ========================================================== */
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+.chart-panel {
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.chart-panel:hover { box-shadow: var(--shadow-glow); }
+.chart-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    padding: 1rem;
+}
+.chart-body canvas {
+    max-height: 280px;
+}
+
+@media (max-width: 900px) {
+    .chart-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .chart-body { min-height: 200px; }
+}
