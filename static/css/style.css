@@ -193,6 +193,7 @@ a { color: var(--accent-light); text-decoration: none; }
     color: var(--text-muted);
 }
 .btn-ghost:hover { color: var(--text); background: var(--bg-hover); }
+.btn-sm { padding: .15rem .4rem; font-size: .85rem; line-height: 1; min-width: auto; }
 
 /* ==========================================================
    Stats Cards

@@ -387,6 +387,7 @@ async function loadAssets() {
             api('/api/assets/summary').then(r => r.json()),
         ]);
         allAssets = assetRes.assets || [];
+        cacheAssets(allAssets);
         renderAssetTable(allAssets);
 
         // stats
@@ -422,6 +423,12 @@ const STATUS_BADGE = {
     '报废':  'badge-red',
 };
 
+function fmtDate(v) {
+    if (!v) return '—';
+    const s = String(v).slice(0, 10);
+    return s === 'None' || s === '' ? '—' : s;
+}
+
 function renderAssetTable(assets) {
     const tbody = document.querySelector('#assetTable tbody');
     const empty = document.getElementById('assetEmpty');
@@ -441,7 +448,10 @@ function renderAssetTable(assets) {
             <td title="${esc(a.serial_number)}">${esc((a.serial_number || '').slice(0, 15))}</td>
             <td><span class="badge ${cls}">${esc(a.status)}</span></td>
             <td>${esc(a.assigned_to || a.custodian || '—')}</td>
-            <td>${esc(a.location || a.building || '—')}</td>
+            <td>${esc(a.location_detail || a.building || '—')}</td>
+            <td>${fmtDate(a.start_date)}</td>
+            <td>${fmtDate(a.dispose_date)}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="openEditAssetModal('${esc(a.asset_id)}')">✏️</button></td>
         </tr>`;
     }).join('');
 }
@@ -659,6 +669,58 @@ async function clearChat() {
         toast(t('chatCleared'), 'success');
     } catch (e) {
         toast(t('chatClearFail') + ': ' + e.message, 'error');
+    }
+}
+
+// ──────────────────────────────────────────────
+// Asset Edit Modal
+// ──────────────────────────────────────────────
+
+let _allAssets = [];
+
+function cacheAssets(list) { _allAssets = list; }
+
+function openEditAssetModal(assetId) {
+    const a = _allAssets.find(x => x.asset_id === assetId);
+    if (!a) return;
+    document.getElementById('editAssetId').value = a.asset_id;
+    document.getElementById('editAssignee').value = a.assigned_to || a.custodian || '';
+    document.getElementById('editBuilding').value = a.building || '';
+    document.getElementById('editRoom').value = a.room || '';
+    document.getElementById('editLocationDetail').value = a.location_detail || '';
+    document.getElementById('editStartDate').value = (a.start_date || '').slice(0, 10) || '';
+    document.getElementById('editDisposeDate').value = (a.dispose_date || '').slice(0, 10) || '';
+    document.getElementById('editNotes').value = a.notes || '';
+    document.getElementById('editAssetModal').classList.add('active');
+    applyI18n();
+}
+
+function closeEditAssetModal() {
+    document.getElementById('editAssetModal').classList.remove('active');
+}
+
+async function submitEditAsset() {
+    const id = document.getElementById('editAssetId').value;
+    const payload = {
+        assigned_to: document.getElementById('editAssignee').value,
+        building: document.getElementById('editBuilding').value,
+        room: document.getElementById('editRoom').value,
+        location_detail: document.getElementById('editLocationDetail').value,
+        start_date: document.getElementById('editStartDate').value,
+        dispose_date: document.getElementById('editDisposeDate').value,
+        notes: document.getElementById('editNotes').value
+    };
+    try {
+        await api(`/api/assets/${encodeURIComponent(id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        toast(t('toastUpdateSuccess'), 'success');
+        closeEditAssetModal();
+        loadAssets();
+    } catch (e) {
+        toast(t('toastUpdateFail') + ': ' + e.message, 'error');
     }
 }
 

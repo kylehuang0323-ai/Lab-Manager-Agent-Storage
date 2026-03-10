@@ -285,6 +285,22 @@ def api_import_sap():
     return jsonify(result)
 
 
+@app.route("/api/assets/<asset_id>", methods=["PUT"])
+def api_update_asset(asset_id):
+    """更新资产可编辑字段（使用人、位置、启用日期、报废日期等）"""
+    data = request.get_json(force=True)
+    editable = {"assigned_to", "building", "room", "location_detail",
+                "start_date", "dispose_date", "status", "custodian", "notes"}
+    updates = {k: v for k, v in data.items() if k in editable}
+    if not updates:
+        return jsonify({"error": "无可更新字段"}), 400
+    try:
+        result = am.update_asset(asset_id, **updates)
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+
+
 # --------------------------------------------------
 # 健康检查
 # --------------------------------------------------
