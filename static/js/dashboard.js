@@ -50,6 +50,7 @@ function switchView(name) {
     if (name === 'dashboard')     refreshDashboard();
     else if (name === 'inventory')    loadInventory();
     else if (name === 'transactions') loadTransactions();
+    else if (name === 'assets')       loadAssets();
 }
 
 navItems.forEach(n => {
@@ -369,6 +370,190 @@ async function exportReport(type) {
         toast('报表已下载', 'success');
     } catch (e) {
         toast('导出失败: ' + e.message, 'error');
+    }
+}
+
+// ──────────────────────────────────────────────
+// Assets View
+// ──────────────────────────────────────────────
+
+let allAssets = [];
+
+async function loadAssets() {
+    try {
+        const [assetRes, catRes, summaryRes] = await Promise.all([
+            api('/api/assets').then(r => r.json()),
+            api('/api/assets/categories').then(r => r.json()),
+            api('/api/assets/summary').then(r => r.json()),
+        ]);
+        allAssets = assetRes.assets || [];
+        renderAssetTable(allAssets);
+
+        // stats
+        const s = summaryRes;
+        document.getElementById('statAssetTotal').textContent = s.total || 0;
+        document.getElementById('statAssetInUse').textContent = (s.by_status && s.by_status['在用']) || 0;
+        document.getElementById('statAssetIdle').textContent = (s.by_status && s.by_status['闲置']) || 0;
+        const other = Object.entries(s.by_status || {})
+            .filter(([k]) => !['在用', '闲置'].includes(k))
+            .reduce((sum, [, v]) => sum + v, 0);
+        document.getElementById('statAssetOther').textContent = other;
+
+        // category filter
+        const sel = document.getElementById('assetCategoryFilter');
+        const current = sel.value;
+        sel.innerHTML = '<option value="">全部分类</option>';
+        (catRes.categories || []).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c; opt.textContent = c;
+            sel.appendChild(opt);
+        });
+        sel.value = current;
+    } catch (e) {
+        toast('加载资产失败: ' + e.message, 'error');
+    }
+}
+
+const STATUS_BADGE = {
+    '在用':  'badge-green',
+    '闲置':  'badge-blue',
+    '维修':  'badge-yellow',
+    '借出':  'badge-orange',
+    '报废':  'badge-red',
+};
+
+function renderAssetTable(assets) {
+    const tbody = document.querySelector('#assetTable tbody');
+    const empty = document.getElementById('assetEmpty');
+    if (!assets.length) {
+        tbody.innerHTML = '';
+        empty.style.display = '';
+        return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = assets.map(a => {
+        const cls = STATUS_BADGE[a.status] || 'badge-gray';
+        return `<tr>
+            <td>${esc(a.asset_id)}</td>
+            <td title="${esc(a.name)}">${esc((a.name || '').slice(0, 30))}</td>
+            <td>${esc(a.category)}</td>
+            <td>${esc(a.model)}</td>
+            <td title="${esc(a.serial_number)}">${esc((a.serial_number || '').slice(0, 15))}</td>
+            <td><span class="badge ${cls}">${esc(a.status)}</span></td>
+            <td>${esc(a.assigned_to || a.custodian || '—')}</td>
+            <td>${esc(a.location || a.building || '—')}</td>
+        </tr>`;
+    }).join('');
+}
+
+// Asset search and filters
+let assetSearchTimer;
+document.getElementById('assetSearchInput').addEventListener('input', () => {
+    clearTimeout(assetSearchTimer);
+    assetSearchTimer = setTimeout(filterAssets, 300);
+});
+document.getElementById('assetCategoryFilter').addEventListener('change', filterAssets);
+document.getElementById('assetStatusFilter').addEventListener('change', filterAssets);
+
+async function filterAssets() {
+    const q = document.getElementById('assetSearchInput').value.trim();
+    const cat = document.getElementById('assetCategoryFilter').value;
+    const status = document.getElementById('assetStatusFilter').value;
+
+    let items;
+    if (q) {
+        const res = await api(`/api/assets/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+        items = res.assets || [];
+    } else {
+        items = allAssets;
+    }
+    if (cat) items = items.filter(a => a.category === cat);
+    if (status) items = items.filter(a => a.status === status);
+    renderAssetTable(items);
+}
+
+// ──────────────────────────────────────────────
+// SAP Import Modal
+// ──────────────────────────────────────────────
+
+let sapSelectedFile = null;
+
+function openSapImportModal() {
+    document.getElementById('sapImportModal').classList.add('open');
+    document.getElementById('sapImportResult').style.display = 'none';
+    document.getElementById('sapFileName').style.display = 'none';
+    sapSelectedFile = null;
+    document.getElementById('sapImportBtn').disabled = true;
+}
+function closeSapImportModal() {
+    document.getElementById('sapImportModal').classList.remove('open');
+}
+
+function handleSapFileSelect() {
+    const input = document.getElementById('sapFileInput');
+    if (input.files.length) {
+        sapSelectedFile = input.files[0];
+        document.getElementById('sapFileName').textContent = '📎 ' + sapSelectedFile.name;
+        document.getElementById('sapFileName').style.display = '';
+        document.getElementById('sapImportBtn').disabled = false;
+    }
+}
+
+// drag & drop
+const sapDrop = document.getElementById('sapDropZone');
+if (sapDrop) {
+    sapDrop.addEventListener('dragover', e => { e.preventDefault(); sapDrop.classList.add('drag-over'); });
+    sapDrop.addEventListener('dragleave', () => sapDrop.classList.remove('drag-over'));
+    sapDrop.addEventListener('drop', e => {
+        e.preventDefault();
+        sapDrop.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) {
+            sapSelectedFile = e.dataTransfer.files[0];
+            document.getElementById('sapFileName').textContent = '📎 ' + sapSelectedFile.name;
+            document.getElementById('sapFileName').style.display = '';
+            document.getElementById('sapImportBtn').disabled = false;
+        }
+    });
+    sapDrop.addEventListener('click', () => document.getElementById('sapFileInput').click());
+}
+
+document.getElementById('sapImportModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeSapImportModal();
+});
+
+async function submitSapImport() {
+    if (!sapSelectedFile) return;
+    const btn = document.getElementById('sapImportBtn');
+    btn.disabled = true;
+    btn.textContent = '导入中…';
+
+    const form = new FormData();
+    form.append('file', sapSelectedFile);
+
+    try {
+        const res = await fetch('/api/assets/import-sap', { method: 'POST', body: form });
+        const data = await res.json();
+        const resultEl = document.getElementById('sapImportResult');
+        resultEl.style.display = '';
+
+        if (data.success > 0) {
+            resultEl.innerHTML = `
+                <div class="import-result success">
+                    ✅ 成功导入 <strong>${data.success}</strong> 项资产
+                    ${data.skipped ? `，跳过 ${data.skipped} 项（已存在/空行）` : ''}
+                    ${data.errors.length ? `<br>⚠️ ${data.errors.length} 项错误` : ''}
+                </div>`;
+            toast(`已导入 ${data.success} 项资产`, 'success');
+            loadAssets();
+        } else {
+            resultEl.innerHTML = `<div class="import-result error">❌ 导入失败：${data.errors.join('; ')}</div>`;
+            toast('导入失败', 'error');
+        }
+    } catch (e) {
+        toast('导入失败: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '开始导入';
     }
 }
 
