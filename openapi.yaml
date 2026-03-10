@@ -1,0 +1,513 @@
+openapi: "2.0"
+info:
+  title: Lab Manager Agent API
+  description: |
+    智能实验室运营管理 Agent API — 支持库存管理、资产管理、AI 对话。
+    Intelligent Lab operations management Agent API — inventory, assets, AI chat.
+  version: "1.0.0"
+host: "REPLACE_WITH_NGROK_URL"
+basePath: "/"
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  /api/chat:
+    post:
+      operationId: chatWithAgent
+      summary: Chat with Lab Manager AI Agent
+      description: |
+        Send a natural language message to the Lab Manager AI agent.
+        The agent can manage inventory (stock in/out, create items, query stock)
+        and assets (assign, return, transfer, dispose, search).
+        Examples: "查一下库存", "入库10个鼠标", "把Surface分配给Lexin", "资产概览"
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                description: User message in natural language (Chinese or English)
+                example: "查一下目前所有的库存"
+      responses:
+        200:
+          description: Agent response with optional tool call details
+          schema:
+            type: object
+            properties:
+              reply:
+                type: string
+                description: Agent's natural language response
+              tool_calls:
+                type: array
+                description: Tools the agent decided to call
+                items:
+                  type: object
+                  properties:
+                    tool:
+                      type: string
+                    params:
+                      type: object
+              tool_results:
+                type: array
+                description: Results from tool executions
+                items:
+                  type: object
+
+  /api/chat/clear:
+    post:
+      operationId: clearChatHistory
+      summary: Clear conversation history
+      description: Reset the AI agent's conversation context for the current session
+      responses:
+        200:
+          description: Success
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "ok"
+
+  /api/inventory:
+    get:
+      operationId: listInventory
+      summary: List all inventory items
+      description: Get the full list of inventory items with quantities, categories, and locations
+      responses:
+        200:
+          description: Inventory list
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/definitions/InventoryItem"
+              total:
+                type: integer
+
+  /api/inventory/{item_id}:
+    get:
+      operationId: getInventoryItem
+      summary: Get a specific inventory item
+      parameters:
+        - in: path
+          name: item_id
+          required: true
+          type: string
+          description: "Item ID (e.g. ITEM-0001)"
+      responses:
+        200:
+          description: Inventory item details
+          schema:
+            $ref: "#/definitions/InventoryItem"
+        404:
+          description: Item not found
+
+  /api/inventory/search:
+    get:
+      operationId: searchInventory
+      summary: Search inventory by keyword
+      parameters:
+        - in: query
+          name: q
+          required: true
+          type: string
+          description: Search keyword (matches name, category, location)
+      responses:
+        200:
+          description: Search results
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/definitions/InventoryItem"
+              total:
+                type: integer
+
+  /api/inventory/categories:
+    get:
+      operationId: getInventoryCategories
+      summary: List all inventory categories
+      responses:
+        200:
+          description: Category list
+          schema:
+            type: object
+            properties:
+              categories:
+                type: array
+                items:
+                  type: string
+
+  /api/inventory/low-stock:
+    get:
+      operationId: getLowStockItems
+      summary: Get items below minimum stock level
+      responses:
+        200:
+          description: Low-stock items
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/definitions/InventoryItem"
+              total:
+                type: integer
+
+  /api/transactions:
+    get:
+      operationId: getTransactions
+      summary: Get inventory transaction history
+      parameters:
+        - in: query
+          name: item_id
+          type: string
+          description: Filter by item ID
+        - in: query
+          name: type
+          type: string
+          description: "Filter by type: stock_in or stock_out"
+          enum: [stock_in, stock_out]
+        - in: query
+          name: limit
+          type: integer
+          default: 50
+          description: Maximum number of records to return
+      responses:
+        200:
+          description: Transaction records
+          schema:
+            type: object
+            properties:
+              records:
+                type: array
+                items:
+                  $ref: "#/definitions/Transaction"
+              total:
+                type: integer
+
+  /api/assets:
+    get:
+      operationId: listAssets
+      summary: List all assets
+      description: Get the full list of fixed assets with status, assignee, and location
+      responses:
+        200:
+          description: Asset list
+          schema:
+            type: object
+            properties:
+              assets:
+                type: array
+                items:
+                  $ref: "#/definitions/Asset"
+              total:
+                type: integer
+
+  /api/assets/{asset_id}:
+    get:
+      operationId: getAsset
+      summary: Get a specific asset by ID
+      parameters:
+        - in: path
+          name: asset_id
+          required: true
+          type: string
+          description: "Asset Tag (e.g. 5442212, E1365341)"
+      responses:
+        200:
+          description: Asset details
+          schema:
+            $ref: "#/definitions/Asset"
+        404:
+          description: Asset not found
+    put:
+      operationId: updateAsset
+      summary: Update editable fields of an asset
+      parameters:
+        - in: path
+          name: asset_id
+          required: true
+          type: string
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              assigned_to:
+                type: string
+                description: Person the asset is assigned to
+              building:
+                type: string
+              room:
+                type: string
+              location_detail:
+                type: string
+              start_date:
+                type: string
+                description: "YYYY-MM-DD"
+              dispose_date:
+                type: string
+                description: "YYYY-MM-DD"
+              notes:
+                type: string
+              status:
+                type: string
+                enum: ["在用", "闲置", "维修", "借出", "报废"]
+              custodian:
+                type: string
+      responses:
+        200:
+          description: Update result
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+
+  /api/assets/search:
+    get:
+      operationId: searchAssets
+      summary: Search assets by keyword
+      parameters:
+        - in: query
+          name: q
+          required: true
+          type: string
+          description: Search keyword (matches name, category, serial number, assignee, etc.)
+      responses:
+        200:
+          description: Search results
+          schema:
+            type: object
+            properties:
+              assets:
+                type: array
+                items:
+                  $ref: "#/definitions/Asset"
+              total:
+                type: integer
+
+  /api/assets/summary:
+    get:
+      operationId: getAssetSummary
+      summary: Get asset summary statistics
+      description: Returns total count, counts by status, counts by category
+      responses:
+        200:
+          description: Asset summary
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+              by_status:
+                type: object
+              by_category:
+                type: object
+
+  /api/assets/categories:
+    get:
+      operationId: getAssetCategories
+      summary: List all asset categories
+      responses:
+        200:
+          description: Category list
+          schema:
+            type: object
+            properties:
+              categories:
+                type: array
+                items:
+                  type: string
+
+  /api/assets/by-status:
+    get:
+      operationId: getAssetsByStatus
+      summary: Filter assets by status
+      parameters:
+        - in: query
+          name: status
+          type: string
+          default: "在用"
+          description: "Asset status filter"
+          enum: ["在用", "闲置", "维修", "借出", "报废"]
+      responses:
+        200:
+          description: Filtered assets
+          schema:
+            type: object
+            properties:
+              assets:
+                type: array
+                items:
+                  $ref: "#/definitions/Asset"
+
+  /api/assets/transactions:
+    get:
+      operationId: getAssetTransactions
+      summary: Get asset operation history
+      parameters:
+        - in: query
+          name: asset_id
+          type: string
+          description: Filter by asset ID
+        - in: query
+          name: type
+          type: string
+          description: "Filter by type: assign, return, transfer, dispose"
+        - in: query
+          name: limit
+          type: integer
+          default: 50
+      responses:
+        200:
+          description: Asset transaction records
+          schema:
+            type: object
+            properties:
+              records:
+                type: array
+                items:
+                  $ref: "#/definitions/AssetTransaction"
+              total:
+                type: integer
+
+  /api/health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      responses:
+        200:
+          description: Service status
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "ok"
+              message:
+                type: string
+
+definitions:
+  InventoryItem:
+    type: object
+    properties:
+      item_id:
+        type: string
+        example: "ITEM-0001"
+      name:
+        type: string
+        example: "Surface鼠标"
+      category:
+        type: string
+        example: "外设"
+      quantity:
+        type: integer
+      unit:
+        type: string
+        example: "个"
+      location:
+        type: string
+      min_stock:
+        type: integer
+      created_at:
+        type: string
+      updated_at:
+        type: string
+
+  Transaction:
+    type: object
+    properties:
+      tx_id:
+        type: string
+      item_id:
+        type: string
+      type:
+        type: string
+        enum: [stock_in, stock_out]
+      quantity:
+        type: integer
+      operator:
+        type: string
+      recipient:
+        type: string
+      note:
+        type: string
+      timestamp:
+        type: string
+
+  Asset:
+    type: object
+    properties:
+      asset_id:
+        type: string
+        description: "SAP Asset Tag"
+        example: "5442212"
+      name:
+        type: string
+        example: "Surface Pro 9"
+      category:
+        type: string
+        example: "Computer Equipment"
+      serial_number:
+        type: string
+      model:
+        type: string
+      status:
+        type: string
+        enum: ["在用", "闲置", "维修", "借出", "报废"]
+      assigned_to:
+        type: string
+      building:
+        type: string
+      room:
+        type: string
+      location_detail:
+        type: string
+      start_date:
+        type: string
+      dispose_date:
+        type: string
+      asset_age:
+        type: string
+      map_aging:
+        type: string
+      custodian:
+        type: string
+      notes:
+        type: string
+
+  AssetTransaction:
+    type: object
+    properties:
+      tx_id:
+        type: string
+      asset_id:
+        type: string
+      type:
+        type: string
+        enum: [assign, return, transfer, dispose]
+      operator:
+        type: string
+      to_person:
+        type: string
+      note:
+        type: string
+      timestamp:
+        type: string
