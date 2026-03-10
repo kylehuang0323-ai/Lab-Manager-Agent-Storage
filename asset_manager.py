@@ -19,8 +19,7 @@ _lock = threading.Lock()
 # --------------------------------------------------
 
 ASSET_HEADERS = [
-    "asset_id",          # 系统编号 AST-0001
-    "asset_tag",         # SAP Asset Tag (可空)
+    "asset_id",          # 资产编号 (即 SAP Asset Tag，由用户提交)
     "serial_number",     # 序列号
     "name",              # 资产名称
     "description",       # 详细描述
@@ -160,8 +159,8 @@ def search_assets(keyword: str) -> list[dict]:
     for a in get_all_assets():
         searchable = " ".join([
             str(a.get(f, "")) for f in
-            ["name", "description", "category", "model", "serial_number",
-             "asset_tag", "custodian", "assigned_to", "location_detail", "status"]
+            ["asset_id", "name", "description", "category", "model", "serial_number",
+             "custodian", "assigned_to", "location_detail", "status"]
         ]).lower()
         if keyword in searchable:
             results.append(a)
@@ -181,10 +180,17 @@ def get_assets_by_status(status: str) -> list[dict]:
     return [a for a in get_all_assets() if str(a.get("status", "")).lower() == status.lower()]
 
 
-def create_asset(name: str, category: str = "Other", **kwargs) -> dict:
-    """新建资产"""
+def create_asset(asset_id: str, name: str, category: str = "Other", **kwargs) -> dict:
+    """新建资产，asset_id 由用户提交（即内部资产编号 / Asset Tag）"""
     init_asset_files()
-    asset_id = _next_id(ASSET_FILE, ASSET_HEADERS, "asset_id", "AST")
+    if not asset_id or not str(asset_id).strip():
+        raise ValueError("必须提供资产编号 (asset_id)")
+    asset_id = str(asset_id).strip()
+
+    # 检查是否已存在
+    if get_asset(asset_id):
+        raise ValueError(f"资产编号 {asset_id} 已存在")
+
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     asset = {
         "asset_id": asset_id,
@@ -435,7 +441,7 @@ def import_sap_excel(filepath: str) -> dict:
     imported = []
     skipped = 0
     errors = []
-    existing_tags = {str(a.get("asset_tag", "")).lower() for a in get_all_assets() if a.get("asset_tag")}
+    existing_ids = {str(a.get("asset_id", "")).lower() for a in get_all_assets() if a.get("asset_id")}
     existing_sns = {str(a.get("serial_number", "")).lower() for a in get_all_assets() if a.get("serial_number")}
 
     for sheet_name in wb.sheetnames:
@@ -482,17 +488,20 @@ def import_sap_excel(filepath: str) -> dict:
                 tag = str(data.get("asset_tag", data.get("asset_tag_fallback", ""))).strip()
                 sn = str(data.get("serial_number", "")).strip()
 
-                # 去重
-                if tag and tag.lower() in existing_tags:
+                # Asset Tag 作为资产编号，必须存在
+                if not tag or tag in ("N/A", "None", ""):
+                    skipped += 1
+                    continue
+
+                # 去重 (按 asset_id)
+                if tag.lower() in existing_ids:
                     skipped += 1
                     continue
                 if sn and sn != "N/A" and sn.lower() in existing_sns:
                     skipped += 1
                     continue
 
-                # 清理数据
-                if tag in ("N/A", "None", ""):
-                    tag = ""
+                # 清理
                 if sn in ("N/A", "None", ""):
                     sn = ""
 
@@ -505,9 +514,9 @@ def import_sap_excel(filepath: str) -> dict:
                     status = "闲置"
 
                 asset = create_asset(
+                    asset_id=tag,
                     name=name[:100],
                     category=_normalize_category(str(data.get("category", "Other"))),
-                    asset_tag=tag,
                     serial_number=sn,
                     description=str(data.get("description", ""))[:200],
                     model=str(data.get("model", "")),
@@ -528,8 +537,7 @@ def import_sap_excel(filepath: str) -> dict:
                     notes=str(data.get("notes", "")),
                 )
                 imported.append(asset)
-                if tag:
-                    existing_tags.add(tag.lower())
+                existing_ids.add(tag.lower())
                 if sn:
                     existing_sns.add(sn.lower())
 
