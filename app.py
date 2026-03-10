@@ -9,6 +9,7 @@ import config
 import agent_engine
 import inventory_manager as im
 import report_generator as rg
+import alert_service
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
@@ -132,6 +133,46 @@ def api_export():
 
 
 # --------------------------------------------------
+# 低库存告警 API + SSE
+# --------------------------------------------------
+
+@app.route("/api/alerts/check")
+def api_alert_check():
+    """手动触发一次低库存检查"""
+    alerts = alert_service.check_low_stock()
+    return jsonify({"alerts": alerts, "total": len(alerts)})
+
+
+@app.route("/api/alerts/stream")
+def api_alert_stream():
+    """SSE 推送低库存告警到前端"""
+    import queue
+
+    q = queue.Queue()
+
+    def on_alert(alerts):
+        q.put(alerts)
+
+    alert_service.subscribe_sse(on_alert)
+
+    def generate():
+        try:
+            while True:
+                try:
+                    alerts = q.get(timeout=30)
+                    yield f"data: {json.dumps(alerts, ensure_ascii=False)}\n\n"
+                except queue.Empty:
+                    yield ": heartbeat\n\n"
+        finally:
+            alert_service.unsubscribe_sse(on_alert)
+
+    import json
+    from flask import Response
+    return Response(generate(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# --------------------------------------------------
 # 健康检查
 # --------------------------------------------------
 
@@ -145,8 +186,10 @@ def health():
 # --------------------------------------------------
 
 if __name__ == "__main__":
+    alert_service.start_alert_scheduler(interval_seconds=300)
     print("=" * 50)
     print("📦 Lab Manager's Agent for Storage")
     print("🌐 http://localhost:5001")
+    print("⏰ 低库存告警已启动 (每 5 分钟)")
     print("=" * 50)
     app.run(host="0.0.0.0", port=5001, debug=config.DEBUG)
