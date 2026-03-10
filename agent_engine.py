@@ -4,6 +4,7 @@ Agent 核心引擎 — 基于 Groq LLM 的意图识别 + Tool-use 执行
 """
 
 import json
+import os
 import re
 from openai import OpenAI
 
@@ -108,10 +109,21 @@ TOOL_MAP = {
 
 
 def _handle_export(params: dict) -> dict:
-    """导出报表的处理逻辑（返回文件路径）"""
-    # 实际导出逻辑在 report_generator 模块，此处返回占位
+    """导出报表"""
+    import report_generator as rg
     report_type = params.get("report_type", "inventory")
-    return {"message": f"报表导出功能将在 report_generator 模块中实现", "type": report_type}
+    try:
+        if report_type == "transactions":
+            path = rg.export_transactions_report(
+                item_id=params.get("item_id"),
+                tx_type=params.get("tx_type"),
+            )
+        else:
+            path = rg.export_inventory_report(category=params.get("category"))
+        filename = os.path.basename(path)
+        return {"success": True, "message": f"报表已导出: {filename}", "filename": filename}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 def _parse_tool_calls(response_text: str) -> list[dict]:

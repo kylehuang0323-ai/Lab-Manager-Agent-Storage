@@ -3,10 +3,12 @@ Lab Manager's Agent for Storage
 Flask 主应用 — 提供 Web 管理后台 + Agent 对话 API
 """
 
-from flask import Flask, render_template, jsonify, request, session
+from flask import Flask, render_template, jsonify, request, session, send_file
 
 import config
 import agent_engine
+import inventory_manager as im
+import report_generator as rg
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
@@ -60,6 +62,73 @@ def api_chat():
 def clear_chat():
     session.pop("history", None)
     return jsonify({"status": "ok"})
+
+
+# --------------------------------------------------
+# 库存 REST API
+# --------------------------------------------------
+
+@app.route("/api/inventory")
+def api_inventory():
+    """获取全部库存"""
+    im.init_data_files()
+    items = im.get_all_items()
+    return jsonify({"items": items, "total": len(items)})
+
+
+@app.route("/api/inventory/<item_id>")
+def api_item(item_id):
+    """获取单个商品"""
+    item = im.get_item(item_id)
+    if not item:
+        return jsonify({"error": "商品不存在"}), 404
+    return jsonify(item)
+
+
+@app.route("/api/inventory/search")
+def api_search():
+    """搜索商品"""
+    keyword = request.args.get("q", "")
+    results = im.search_items(keyword) if keyword else im.get_all_items()
+    return jsonify({"items": results, "total": len(results)})
+
+
+@app.route("/api/inventory/categories")
+def api_categories():
+    """获取分类列表"""
+    return jsonify({"categories": im.get_categories()})
+
+
+@app.route("/api/inventory/low-stock")
+def api_low_stock():
+    """低库存告警"""
+    items = im.get_low_stock_items()
+    return jsonify({"items": items, "total": len(items)})
+
+
+@app.route("/api/transactions")
+def api_transactions():
+    """出入库记录"""
+    item_id = request.args.get("item_id")
+    tx_type = request.args.get("type")
+    limit = int(request.args.get("limit", 50))
+    records = im.get_transactions(item_id=item_id, tx_type=tx_type, limit=limit)
+    return jsonify({"records": records, "total": len(records)})
+
+
+@app.route("/api/report/export", methods=["POST"])
+def api_export():
+    """导出报表"""
+    data = request.get_json() or {}
+    report_type = data.get("type", "inventory")
+    try:
+        if report_type == "transactions":
+            path = rg.export_transactions_report()
+        else:
+            path = rg.export_inventory_report(category=data.get("category"))
+        return send_file(path, as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # --------------------------------------------------
