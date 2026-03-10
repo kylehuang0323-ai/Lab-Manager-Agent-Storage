@@ -58,6 +58,12 @@ const I18N = {
         emptyInventory: '暂无库存数据',
         loadInvFail: '加载库存失败',
 
+        // Charts
+        chartInventoryCategory: '📊 库存分类分布',
+        chartTxTrend: '📈 近 7 日出入库趋势',
+        chartAssetCategory: '📊 资产分类分布',
+        chartAssetStatus: '📋 资产状态分布',
+
         // Transactions
         txTitle: '出入库记录',
         btnExportTx: '📥 导出流水',
@@ -213,6 +219,12 @@ const I18N = {
         badgeNormal: 'Normal',
         emptyInventory: 'No inventory data',
         loadInvFail: 'Failed to load inventory',
+
+        // Charts
+        chartInventoryCategory: '📊 Inventory by Category',
+        chartTxTrend: '📈 7-Day Transaction Trend',
+        chartAssetCategory: '📊 Assets by Category',
+        chartAssetStatus: '📋 Asset Status Distribution',
 
         txTitle: 'Transactions',
         btnExportTx: '📥 Export Transactions',

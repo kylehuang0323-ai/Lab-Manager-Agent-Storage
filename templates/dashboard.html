@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -108,6 +109,26 @@
                 </div>
                 <div class="panel-body" id="dashLowStockList">
                     <div class="empty-state">暂无告警</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="chart-grid">
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <h3 data-i18n="chartInventoryCategory">📊 库存分类分布</h3>
+                </div>
+                <div class="panel-body chart-body">
+                    <canvas id="chartInvCategory"></canvas>
+                </div>
+            </div>
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <h3 data-i18n="chartTxTrend">📈 近 7 日出入库趋势</h3>
+                </div>
+                <div class="panel-body chart-body">
+                    <canvas id="chartTxTrend"></canvas>
                 </div>
             </div>
         </div>
@@ -227,6 +248,26 @@
                 <div class="stat-body">
                     <span class="stat-value" id="statAssetOther">—</span>
                     <span class="stat-label" data-i18n="statOther">维修/借出/报废</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Charts Row -->
+        <div class="chart-grid">
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <h3 data-i18n="chartAssetCategory">📊 资产分类分布</h3>
+                </div>
+                <div class="panel-body chart-body">
+                    <canvas id="chartAssetCategory"></canvas>
+                </div>
+            </div>
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <h3 data-i18n="chartAssetStatus">📋 资产状态分布</h3>
+                </div>
+                <div class="panel-body chart-body">
+                    <canvas id="chartAssetStatus"></canvas>
                 </div>
             </div>
         </div>
@@ -424,6 +465,7 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="/static/js/i18n.js"></script>
+<script src="/static/js/charts.js"></script>
 <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
