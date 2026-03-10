@@ -3,32 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Manager — 库存管理</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #0f172a; color: #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            min-height: 100vh;
-        }
-        .welcome {
-            text-align: center; padding: 2rem;
-        }
-        .welcome h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-        .welcome p { color: #94a3b8; font-size: 1.1rem; }
-        .status {
-            margin-top: 1.5rem; padding: 0.8rem 1.5rem;
-            background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
-            border-radius: 12px; color: #4ade80; font-size: 0.9rem;
-        }
-    </style>
+    <title>Lab Manager — 智能库存管理</title>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <div class="welcome">
-        <h1>📦 Lab Manager Agent</h1>
-        <p>智能库存管理系统</p>
-        <div class="status">✅ 服务运行中 — 等待功能模块接入</div>
+
+<!-- ====== Sidebar ====== -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="sidebar-logo">📦</span>
+        <h1 class="sidebar-title">Lab Manager</h1>
     </div>
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="dashboard">
+            <span class="nav-icon">📊</span><span class="nav-label">仪表盘</span>
+        </a>
+        <a href="#" class="nav-item" data-view="inventory">
+            <span class="nav-icon">🗃️</span><span class="nav-label">库存管理</span>
+        </a>
+        <a href="#" class="nav-item" data-view="transactions">
+            <span class="nav-icon">📋</span><span class="nav-label">出入库记录</span>
+        </a>
+        <a href="#" class="nav-item" data-view="chat">
+            <span class="nav-icon">🤖</span><span class="nav-label">AI 助手</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="server-status" id="serverStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">连接中…</span>
+        </div>
+    </div>
+</aside>
+
+<!-- ====== Main Content ====== -->
+<main class="main-content" id="mainContent">
+
+    <!-- ========== View: Dashboard ========== -->
+    <section class="view active" id="view-dashboard">
+        <div class="view-header">
+            <h2>仪表盘</h2>
+            <button class="btn btn-ghost" onclick="refreshDashboard()">🔄 刷新</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🏷️</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statTotalItems">—</span>
+                    <span class="stat-label">总商品种类</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statTotalQty">—</span>
+                    <span class="stat-label">总库存数量</span>
+                </div>
+            </div>
+            <div class="stat-card card-warning">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statLowStock">—</span>
+                    <span class="stat-label">低库存告警数</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-body">
+                    <span class="stat-value" id="statTodayOps">—</span>
+                    <span class="stat-label">今日操作数</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>📋 最近出入库记录</h3>
+                </div>
+                <div class="panel-body table-wrap">
+                    <table class="data-table" id="dashRecentTxTable">
+                        <thead>
+                            <tr>
+                                <th>流水号</th><th>商品</th><th>类型</th>
+                                <th>数量</th><th>操作人</th><th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="empty-state" id="dashRecentTxEmpty" style="display:none;">暂无记录</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>⚠️ 低库存告警</h3>
+                </div>
+                <div class="panel-body" id="dashLowStockList">
+                    <div class="empty-state">暂无告警</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== View: Inventory ========== -->
+    <section class="view" id="view-inventory">
+        <div class="view-header">
+            <h2>库存管理</h2>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openCreateItemModal()">＋ 新建商品</button>
+                <button class="btn btn-secondary" onclick="exportReport('inventory')">📥 导出报表</button>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="invSearchInput" placeholder="搜索名称 / 分类 / 位置…"
+                       autocomplete="off">
+            </div>
+            <select id="invCategoryFilter" class="filter-select">
+                <option value="">全部分类</option>
+            </select>
+        </div>
+
+        <div class="panel">
+            <div class="panel-body table-wrap">
+                <table class="data-table" id="invTable">
+                    <thead>
+                        <tr>
+                            <th>编号</th><th>名称</th><th>分类</th>
+                            <th>数量</th><th>单位</th><th>位置</th><th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="empty-state" id="invEmpty" style="display:none;">暂无库存数据</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== View: Transactions ========== -->
+    <section class="view" id="view-transactions">
+        <div class="view-header">
+            <h2>出入库记录</h2>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="exportReport('transactions')">📥 导出流水</button>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <select id="txTypeFilter" class="filter-select">
+                <option value="">全部类型</option>
+                <option value="in">入库</option>
+                <option value="out">出库</option>
+            </select>
+            <div class="date-range">
+                <input type="date" id="txDateFrom" class="date-input">
+                <span class="date-sep">—</span>
+                <input type="date" id="txDateTo" class="date-input">
+            </div>
+            <button class="btn btn-ghost" onclick="loadTransactions()">查询</button>
+        </div>
+
+        <div class="panel">
+            <div class="panel-body table-wrap">
+                <table class="data-table" id="txTable">
+                    <thead>
+                        <tr>
+                            <th>流水号</th><th>商品</th><th>类型</th>
+                            <th>数量</th><th>操作人</th><th>领用人</th><th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="empty-state" id="txEmpty" style="display:none;">暂无出入库记录</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== View: AI Chat ========== -->
+    <section class="view" id="view-chat">
+        <div class="view-header">
+            <h2>AI 助手</h2>
+            <button class="btn btn-ghost" onclick="clearChat()">🗑️ 清除对话</button>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-welcome">
+                    <div class="chat-welcome-icon">🤖</div>
+                    <h3>你好，我是 Lab Manager AI 助手</h3>
+                    <p>你可以用自然语言来管理库存，例如：</p>
+                    <div class="chat-suggestions">
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)">查看所有库存</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)">入库 50 个鼠标</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)">哪些商品库存不足？</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)">导出库存报表</button>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput"
+                       placeholder="输入指令，如：入库 50 个鼠标…"
+                       autocomplete="off">
+                <button class="btn btn-primary chat-send-btn" id="chatSendBtn"
+                        onclick="sendChatMessage()">发送</button>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ====== Modal: Create Item ====== -->
+<div class="modal-overlay" id="createItemModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>新建商品</h3>
+            <button class="modal-close" onclick="closeCreateItemModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>商品名称 <span class="required">*</span></label>
+                <input type="text" id="newItemName" placeholder="例如：USB-C 数据线">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>分类 <span class="required">*</span></label>
+                    <input type="text" id="newItemCategory" placeholder="例如：数据线">
+                </div>
+                <div class="form-group">
+                    <label>单位</label>
+                    <input type="text" id="newItemUnit" placeholder="个" value="个">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>初始数量</label>
+                    <input type="number" id="newItemQty" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>最低库存</label>
+                    <input type="number" id="newItemMinStock" min="0" value="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>存放位置</label>
+                <input type="text" id="newItemLocation" placeholder="例如：A 区-柜 3">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeCreateItemModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitCreateItem()">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== Toast ====== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/static/js/dashboard.js"></script>
 </body>
 </html>
