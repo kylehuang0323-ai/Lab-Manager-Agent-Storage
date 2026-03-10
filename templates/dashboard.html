@@ -16,25 +16,26 @@
     </div>
     <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-view="dashboard">
-            <span class="nav-icon">📊</span><span class="nav-label">仪表盘</span>
+            <span class="nav-icon">📊</span><span class="nav-label" data-i18n="navDashboard">仪表盘</span>
         </a>
         <a href="#" class="nav-item" data-view="inventory">
-            <span class="nav-icon">🗃️</span><span class="nav-label">库存管理</span>
+            <span class="nav-icon">🗃️</span><span class="nav-label" data-i18n="navInventory">库存管理</span>
         </a>
         <a href="#" class="nav-item" data-view="transactions">
-            <span class="nav-icon">📋</span><span class="nav-label">出入库记录</span>
+            <span class="nav-icon">📋</span><span class="nav-label" data-i18n="navTransactions">出入库记录</span>
         </a>
         <a href="#" class="nav-item" data-view="assets">
-            <span class="nav-icon">🖥️</span><span class="nav-label">资产管理</span>
+            <span class="nav-icon">🖥️</span><span class="nav-label" data-i18n="navAssets">资产管理</span>
         </a>
         <a href="#" class="nav-item" data-view="chat">
-            <span class="nav-icon">🤖</span><span class="nav-label">AI 助手</span>
+            <span class="nav-icon">🤖</span><span class="nav-label" data-i18n="navChat">AI 助手</span>
         </a>
     </nav>
     <div class="sidebar-footer">
+        <button class="btn btn-ghost lang-toggle" id="langToggleBtn" onclick="toggleLang()">🌐 EN</button>
         <div class="server-status" id="serverStatus">
             <span class="status-dot"></span>
-            <span class="status-text">连接中…</span>
+            <span class="status-text" data-i18n="serverConnecting">连接中…</span>
         </div>
     </div>
 </aside>
@@ -45,8 +46,8 @@
     <!-- ========== View: Dashboard ========== -->
     <section class="view active" id="view-dashboard">
         <div class="view-header">
-            <h2>仪表盘</h2>
-            <button class="btn btn-ghost" onclick="refreshDashboard()">🔄 刷新</button>
+            <h2 data-i18n="dashTitle">仪表盘</h2>
+            <button class="btn btn-ghost" onclick="refreshDashboard()" data-i18n="btnRefresh">🔄 刷新</button>
         </div>
 
         <div class="stats-grid">
@@ -54,28 +55,28 @@
                 <div class="stat-icon">🏷️</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statTotalItems">—</span>
-                    <span class="stat-label">总商品种类</span>
+                    <span class="stat-label" data-i18n="statTotalItems">总商品种类</span>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">📦</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statTotalQty">—</span>
-                    <span class="stat-label">总库存数量</span>
+                    <span class="stat-label" data-i18n="statTotalQty">总库存数量</span>
                 </div>
             </div>
             <div class="stat-card card-warning">
                 <div class="stat-icon">⚠️</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statLowStock">—</span>
-                    <span class="stat-label">低库存告警数</span>
+                    <span class="stat-label" data-i18n="statLowStock">低库存告警数</span>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">⚡</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statTodayOps">—</span>
-                    <span class="stat-label">今日操作数</span>
+                    <span class="stat-label" data-i18n="statTodayOps">今日操作数</span>
                 </div>
             </div>
         </div>
@@ -83,24 +84,24 @@
         <div class="panel-grid">
             <div class="panel">
                 <div class="panel-header">
-                    <h3>📋 最近出入库记录</h3>
+                    <h3 data-i18n="panelRecentTx">📋 最近出入库记录</h3>
                 </div>
                 <div class="panel-body table-wrap">
                     <table class="data-table" id="dashRecentTxTable">
                         <thead>
                             <tr>
-                                <th>流水号</th><th>商品</th><th>类型</th>
-                                <th>数量</th><th>操作人</th><th>时间</th>
+                                <th data-i18n="thTxId">流水号</th><th data-i18n="thItem">商品</th><th data-i18n="thType">类型</th>
+                                <th data-i18n="thQty">数量</th><th data-i18n="thOperator">操作人</th><th data-i18n="thTime">时间</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
-                    <div class="empty-state" id="dashRecentTxEmpty" style="display:none;">暂无记录</div>
+                    <div class="empty-state" id="dashRecentTxEmpty" style="display:none;" data-i18n="emptyRecords">暂无记录</div>
                 </div>
             </div>
             <div class="panel">
                 <div class="panel-header">
-                    <h3>⚠️ 低库存告警</h3>
+                    <h3 data-i18n="panelLowStock">⚠️ 低库存告警</h3>
                 </div>
                 <div class="panel-body" id="dashLowStockList">
                     <div class="empty-state">暂无告警</div>
@@ -112,10 +113,10 @@
     <!-- ========== View: Inventory ========== -->
     <section class="view" id="view-inventory">
         <div class="view-header">
-            <h2>库存管理</h2>
+            <h2 data-i18n="invTitle">库存管理</h2>
             <div class="header-actions">
-                <button class="btn btn-primary" onclick="openCreateItemModal()">＋ 新建商品</button>
-                <button class="btn btn-secondary" onclick="exportReport('inventory')">📥 导出报表</button>
+                <button class="btn btn-primary" onclick="openCreateItemModal()" data-i18n="btnNewItem">＋ 新建商品</button>
+                <button class="btn btn-secondary" onclick="exportReport('inventory')" data-i18n="btnExportReport">📥 导出报表</button>
             </div>
         </div>
 
@@ -123,10 +124,10 @@
             <div class="search-box">
                 <span class="search-icon">🔍</span>
                 <input type="text" id="invSearchInput" placeholder="搜索名称 / 分类 / 位置…"
-                       autocomplete="off">
+                       autocomplete="off" data-i18n-ph="phSearchInv">
             </div>
             <select id="invCategoryFilter" class="filter-select">
-                <option value="">全部分类</option>
+                <option value="" data-i18n="optAllCategories">全部分类</option>
             </select>
         </div>
 
@@ -135,13 +136,13 @@
                 <table class="data-table" id="invTable">
                     <thead>
                         <tr>
-                            <th>编号</th><th>名称</th><th>分类</th>
-                            <th>数量</th><th>单位</th><th>位置</th><th>状态</th>
+                            <th data-i18n="thId">编号</th><th data-i18n="thName">名称</th><th data-i18n="thCategory">分类</th>
+                            <th data-i18n="thQty">数量</th><th data-i18n="thUnit">单位</th><th data-i18n="thLocation">位置</th><th data-i18n="thStatus">状态</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-                <div class="empty-state" id="invEmpty" style="display:none;">暂无库存数据</div>
+                <div class="empty-state" id="invEmpty" style="display:none;" data-i18n="emptyInventory">暂无库存数据</div>
             </div>
         </div>
     </section>
@@ -149,24 +150,24 @@
     <!-- ========== View: Transactions ========== -->
     <section class="view" id="view-transactions">
         <div class="view-header">
-            <h2>出入库记录</h2>
+            <h2 data-i18n="txTitle">出入库记录</h2>
             <div class="header-actions">
-                <button class="btn btn-secondary" onclick="exportReport('transactions')">📥 导出流水</button>
+                <button class="btn btn-secondary" onclick="exportReport('transactions')" data-i18n="btnExportTx">📥 导出流水</button>
             </div>
         </div>
 
         <div class="filter-bar">
             <select id="txTypeFilter" class="filter-select">
-                <option value="">全部类型</option>
-                <option value="in">入库</option>
-                <option value="out">出库</option>
+                <option value="" data-i18n="optAllTypes">全部类型</option>
+                <option value="in" data-i18n="optIn">入库</option>
+                <option value="out" data-i18n="optOut">出库</option>
             </select>
             <div class="date-range">
                 <input type="date" id="txDateFrom" class="date-input">
                 <span class="date-sep">—</span>
                 <input type="date" id="txDateTo" class="date-input">
             </div>
-            <button class="btn btn-ghost" onclick="loadTransactions()">查询</button>
+            <button class="btn btn-ghost" onclick="loadTransactions()" data-i18n="btnQuery">查询</button>
         </div>
 
         <div class="panel">
@@ -174,13 +175,13 @@
                 <table class="data-table" id="txTable">
                     <thead>
                         <tr>
-                            <th>流水号</th><th>商品</th><th>类型</th>
-                            <th>数量</th><th>操作人</th><th>领用人</th><th>时间</th>
+                            <th data-i18n="thTxId">流水号</th><th data-i18n="thItem">商品</th><th data-i18n="thType">类型</th>
+                            <th data-i18n="thQty">数量</th><th data-i18n="thOperator">操作人</th><th data-i18n="thRecipient">领用人</th><th data-i18n="thTime">时间</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-                <div class="empty-state" id="txEmpty" style="display:none;">暂无出入库记录</div>
+                <div class="empty-state" id="txEmpty" style="display:none;" data-i18n="emptyTx">暂无出入库记录</div>
             </div>
         </div>
     </section>
@@ -188,9 +189,9 @@
     <!-- ========== View: Assets ========== -->
     <section class="view" id="view-assets">
         <div class="view-header">
-            <h2>资产管理</h2>
+            <h2 data-i18n="assetTitle">资产管理</h2>
             <div class="header-actions">
-                <button class="btn btn-primary" onclick="openSapImportModal()">📤 导入 SAP 报表</button>
+                <button class="btn btn-primary" onclick="openSapImportModal()" data-i18n="btnImportSap">📤 导入 SAP 报表</button>
                 <button class="btn btn-ghost" onclick="loadAssets()">🔄 刷新</button>
             </div>
         </div>
@@ -201,28 +202,28 @@
                 <div class="stat-icon">🖥️</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statAssetTotal">—</span>
-                    <span class="stat-label">资产总数</span>
+                    <span class="stat-label" data-i18n="statAssetTotal">资产总数</span>
                 </div>
             </div>
             <div class="stat-card card-success">
                 <div class="stat-icon">✅</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statAssetInUse">—</span>
-                    <span class="stat-label">在用</span>
+                    <span class="stat-label" data-i18n="statInUse">在用</span>
                 </div>
             </div>
             <div class="stat-card card-info">
                 <div class="stat-icon">💤</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statAssetIdle">—</span>
-                    <span class="stat-label">闲置</span>
+                    <span class="stat-label" data-i18n="statIdle">闲置</span>
                 </div>
             </div>
             <div class="stat-card card-warning">
                 <div class="stat-icon">🔧</div>
                 <div class="stat-body">
                     <span class="stat-value" id="statAssetOther">—</span>
-                    <span class="stat-label">维修/借出/报废</span>
+                    <span class="stat-label" data-i18n="statOther">维修/借出/报废</span>
                 </div>
             </div>
         </div>
@@ -231,18 +232,18 @@
         <div class="filter-bar">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
-                <input type="text" id="assetSearchInput" placeholder="搜索名称 / 编号 / SN / 使用人…" autocomplete="off">
+                <input type="text" id="assetSearchInput" placeholder="搜索名称 / 编号 / SN / 使用人…" autocomplete="off" data-i18n-ph="phSearchAsset">
             </div>
             <select id="assetCategoryFilter" class="filter-select">
-                <option value="">全部分类</option>
+                <option value="" data-i18n="optAllCategories">全部分类</option>
             </select>
             <select id="assetStatusFilter" class="filter-select">
-                <option value="">全部状态</option>
-                <option value="在用">在用</option>
-                <option value="闲置">闲置</option>
-                <option value="维修">维修</option>
-                <option value="借出">借出</option>
-                <option value="报废">报废</option>
+                <option value="" data-i18n="optAllStatus">全部状态</option>
+                <option value="在用" data-i18n="statusInUse">在用</option>
+                <option value="闲置" data-i18n="statusIdle">闲置</option>
+                <option value="维修" data-i18n="statusRepair">维修</option>
+                <option value="借出" data-i18n="statusLent">借出</option>
+                <option value="报废" data-i18n="statusDisposed">报废</option>
             </select>
         </div>
 
@@ -252,13 +253,13 @@
                 <table class="data-table" id="assetTable">
                     <thead>
                         <tr>
-                            <th>资产ID</th><th>名称</th><th>分类</th><th>型号</th>
-                            <th>SN</th><th>状态</th><th>使用人</th><th>位置</th>
+                            <th data-i18n="thAssetId">资产ID</th><th data-i18n="thName">名称</th><th data-i18n="thCategory">分类</th><th data-i18n="thModel">型号</th>
+                            <th>SN</th><th data-i18n="thStatus">状态</th><th data-i18n="thAssignee">使用人</th><th data-i18n="thLocation">位置</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-                <div class="empty-state" id="assetEmpty" style="display:none;">暂无资产数据，请先导入 SAP 报表</div>
+                <div class="empty-state" id="assetEmpty" style="display:none;" data-i18n="emptyAssets">暂无资产数据，请先导入 SAP 报表</div>
             </div>
         </div>
     </section>
@@ -266,30 +267,30 @@
     <!-- ========== View: AI Chat ========== -->
     <section class="view" id="view-chat">
         <div class="view-header">
-            <h2>AI 助手</h2>
-            <button class="btn btn-ghost" onclick="clearChat()">🗑️ 清除对话</button>
+            <h2 data-i18n="chatTitle">AI 助手</h2>
+            <button class="btn btn-ghost" onclick="clearChat()" data-i18n="btnClearChat">🗑️ 清除对话</button>
         </div>
 
         <div class="chat-container">
             <div class="chat-messages" id="chatMessages">
                 <div class="chat-welcome">
                     <div class="chat-welcome-icon">🤖</div>
-                    <h3>你好，我是 Lab Manager AI 助手</h3>
-                    <p>你可以用自然语言来管理库存，例如：</p>
+                    <h3 data-i18n="chatWelcomeTitle">你好，我是 Lab Manager AI 助手</h3>
+                    <p data-i18n="chatWelcomeDesc">你可以用自然语言来管理库存，例如：</p>
                     <div class="chat-suggestions">
-                        <button class="suggestion-chip" onclick="sendSuggestion(this)">查看所有库存</button>
-                        <button class="suggestion-chip" onclick="sendSuggestion(this)">入库 50 个鼠标</button>
-                        <button class="suggestion-chip" onclick="sendSuggestion(this)">哪些商品库存不足？</button>
-                        <button class="suggestion-chip" onclick="sendSuggestion(this)">导出库存报表</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chipViewAll">查看所有库存</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chipStockIn">入库 50 个鼠标</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chipLowStock">哪些商品库存不足？</button>
+                        <button class="suggestion-chip" onclick="sendSuggestion(this)" data-i18n="chipExport">导出库存报表</button>
                     </div>
                 </div>
             </div>
             <div class="chat-input-area">
                 <input type="text" id="chatInput"
                        placeholder="输入指令，如：入库 50 个鼠标…"
-                       autocomplete="off">
+                       autocomplete="off" data-i18n-ph="phChatInput">
                 <button class="btn btn-primary chat-send-btn" id="chatSendBtn"
-                        onclick="sendChatMessage()">发送</button>
+                        onclick="sendChatMessage()" data-i18n="btnSend">发送</button>
             </div>
         </div>
     </section>
@@ -300,42 +301,42 @@
 <div class="modal-overlay" id="createItemModal">
     <div class="modal">
         <div class="modal-header">
-            <h3>新建商品</h3>
+            <h3 data-i18n="modalNewItem">新建商品</h3>
             <button class="modal-close" onclick="closeCreateItemModal()">&times;</button>
         </div>
         <div class="modal-body">
             <div class="form-group">
-                <label>商品名称 <span class="required">*</span></label>
-                <input type="text" id="newItemName" placeholder="例如：USB-C 数据线">
+                <label><span data-i18n="lblItemName">商品名称</span> <span class="required">*</span></label>
+                <input type="text" id="newItemName" placeholder="例如：USB-C 数据线" data-i18n-ph="phItemName">
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>分类 <span class="required">*</span></label>
-                    <input type="text" id="newItemCategory" placeholder="例如：数据线">
+                    <label><span data-i18n="lblCategory">分类</span> <span class="required">*</span></label>
+                    <input type="text" id="newItemCategory" placeholder="例如：数据线" data-i18n-ph="phCategory">
                 </div>
                 <div class="form-group">
-                    <label>单位</label>
+                    <label data-i18n="lblUnit">单位</label>
                     <input type="text" id="newItemUnit" placeholder="个" value="个">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>初始数量</label>
+                    <label data-i18n="lblInitQty">初始数量</label>
                     <input type="number" id="newItemQty" min="0" value="0">
                 </div>
                 <div class="form-group">
-                    <label>最低库存</label>
+                    <label data-i18n="lblMinStock">最低库存</label>
                     <input type="number" id="newItemMinStock" min="0" value="0">
                 </div>
             </div>
             <div class="form-group">
-                <label>存放位置</label>
-                <input type="text" id="newItemLocation" placeholder="例如：A 区-柜 3">
+                <label data-i18n="lblLocation">存放位置</label>
+                <input type="text" id="newItemLocation" placeholder="例如：A 区-柜 3" data-i18n-ph="phLocation">
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeCreateItemModal()">取消</button>
-            <button class="btn btn-primary" onclick="submitCreateItem()">创建</button>
+            <button class="btn btn-ghost" onclick="closeCreateItemModal()" data-i18n="btnCancel">取消</button>
+            <button class="btn btn-primary" onclick="submitCreateItem()" data-i18n="btnCreate">创建</button>
         </div>
     </div>
 </div>
@@ -344,11 +345,11 @@
 <div class="modal-overlay" id="sapImportModal">
     <div class="modal">
         <div class="modal-header">
-            <h3>📤 导入 SAP 固资报表</h3>
+            <h3 data-i18n="modalSapImport">📤 导入 SAP 固资报表</h3>
             <button class="modal-close" onclick="closeSapImportModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            <p style="color: var(--text-secondary); margin-bottom: 16px;" data-i18n="sapImportDesc">
                 上传从 SAP 导出的固资明细 Excel 文件（.xlsx），系统将自动识别格式并导入。
             </p>
             <div class="file-drop-zone" id="sapDropZone">
@@ -360,8 +361,8 @@
             <div id="sapImportResult" style="display:none; margin-top: 16px;"></div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeSapImportModal()">取消</button>
-            <button class="btn btn-primary" id="sapImportBtn" onclick="submitSapImport()" disabled>开始导入</button>
+            <button class="btn btn-ghost" onclick="closeSapImportModal()" data-i18n="btnCancel">取消</button>
+            <button class="btn btn-primary" id="sapImportBtn" onclick="submitSapImport()" disabled data-i18n="btnStartImport">开始导入</button>
         </div>
     </div>
 </div>
@@ -369,6 +370,7 @@
 <!-- ====== Toast ====== -->
 <div class="toast-container" id="toastContainer"></div>
 
+<script src="/static/js/i18n.js"></script>
 <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
