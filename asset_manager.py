@@ -4,8 +4,10 @@
 """
 
 import os
+import re
 import threading
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from typing import Optional
 
 from openpyxl import Workbook, load_workbook
@@ -35,9 +37,11 @@ ASSET_HEADERS = [
     "cost_basis",        # 采购成本
     "currency",          # 币种
     "po_number",         # PO 订单号
-    "purchase_date",     # 采购/入资日期
-    "start_date",        # 启用日期
-    "dispose_date",      # 报废日期
+    "purchase_date",     # 采购/入资日期 (Asset Cap Date)
+    "start_date",        # 启用日期 (= Asset Cap Date)
+    "dispose_date",      # 报废日期 (= Asset Cap Date + MAP Aging)
+    "asset_age",         # 资产年龄 (来自 SAP Asset Age)
+    "map_aging",         # MAP 折旧周期 (来自 SAP MAP Aging)
     "useful_life",       # 使用年限
     "last_inventory_date",  # 最近盘点日期
     "processor",         # 处理器 (IT 资产)
@@ -402,6 +406,8 @@ SAP_COLUMN_MAP = {
     "CURR": "currency",
     "PO Number": "po_number",
     "Asset Cap Date": "purchase_date",
+    "Asset Age": "asset_age",
+    "MAP Aging": "map_aging",
     "Useful Life": "useful_life",
     "Last Inventory Date": "last_inventory_date",
     "Processor Speed": "processor",
@@ -424,6 +430,45 @@ ASSETMGR_COLUMN_MAP = {
     "PO": "po_number",
     "ShippingDate": "purchase_date",
 }
+
+
+def _parse_aging_to_months(aging_str: str) -> Optional[int]:
+    """解析 MAP Aging / Useful Life 字符串为月数。
+    支持格式: '15 years', '3yr', '5 Years, 0 Months', '60 months' 等
+    """
+    if not aging_str:
+        return None
+    s = str(aging_str).strip().lower()
+    total_months = 0
+    # 匹配年份
+    m_y = re.search(r'(\d+)\s*year', s)
+    if m_y:
+        total_months += int(m_y.group(1)) * 12
+    # 简写 yr
+    if not m_y:
+        m_yr = re.search(r'(\d+)\s*yr', s)
+        if m_yr:
+            total_months += int(m_yr.group(1)) * 12
+    # 匹配月份
+    m_m = re.search(r'(\d+)\s*month', s)
+    if m_m:
+        total_months += int(m_m.group(1))
+    return total_months if total_months > 0 else None
+
+
+def _calc_dispose_date(cap_date_str: str, aging_str: str) -> str:
+    """根据 Asset Cap Date + MAP Aging 计算报废日期"""
+    if not cap_date_str or not aging_str:
+        return ""
+    months = _parse_aging_to_months(aging_str)
+    if not months:
+        return ""
+    try:
+        cap_date = datetime.strptime(str(cap_date_str).strip()[:10], "%Y-%m-%d")
+        end_date = cap_date + relativedelta(months=months)
+        return end_date.strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        return ""
 
 
 def import_sap_excel(filepath: str) -> dict:
@@ -516,6 +561,11 @@ def import_sap_excel(filepath: str) -> dict:
                 elif "仓库" in loc or "闲置" in loc:
                     status = "闲置"
 
+                # 计算日期：start_date 来自 Asset Cap Date，dispose_date 自动推算
+                cap_date = str(data.get("purchase_date", ""))
+                aging_raw = str(data.get("map_aging", ""))
+                dispose_date = _calc_dispose_date(cap_date, aging_raw)
+
                 asset = create_asset(
                     asset_id=tag,
                     name=name[:100],
@@ -531,7 +581,11 @@ def import_sap_excel(filepath: str) -> dict:
                     cost_basis=data.get("cost_basis", ""),
                     currency=str(data.get("currency", "CNY")),
                     po_number=str(data.get("po_number", "")),
-                    purchase_date=str(data.get("purchase_date", "")),
+                    purchase_date=cap_date,
+                    start_date=cap_date,
+                    dispose_date=dispose_date,
+                    asset_age=str(data.get("asset_age", "")),
+                    map_aging=aging_raw,
                     useful_life=str(data.get("useful_life", "")),
                     last_inventory_date=str(data.get("last_inventory_date", "")),
                     processor=str(data.get("processor", "")),
