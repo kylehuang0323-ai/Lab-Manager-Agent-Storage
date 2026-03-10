@@ -450,6 +450,8 @@ function renderAssetTable(assets) {
             <td>${esc(a.assigned_to || a.custodian || '—')}</td>
             <td>${esc(a.location_detail || a.building || '—')}</td>
             <td>${fmtDate(a.start_date)}</td>
+            <td>${esc(a.asset_age || '—')}</td>
+            <td>${esc(a.map_aging || '—')}</td>
             <td>${fmtDate(a.dispose_date)}</td>
             <td><button class="btn btn-ghost btn-sm" onclick="openEditAssetModal('${esc(a.asset_id)}')">✏️</button></td>
         </tr>`;
