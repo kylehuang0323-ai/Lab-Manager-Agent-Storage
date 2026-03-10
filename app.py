@@ -18,6 +18,15 @@ app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
 
 
+# CORS 支持（Copilot Studio REST API 调用需要）
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
+    return response
+
+
 # --------------------------------------------------
 # 页面路由
 # --------------------------------------------------
