@@ -102,18 +102,22 @@ def start_ngrok():
 
 
 def _update_openapi(public_url):
-    """自动更新 openapi.yaml 中的 host 字段"""
+    """自动更新 openapi.yaml 中的 servers URL"""
     spec_path = os.path.join(BASE_DIR, "openapi.yaml")
     if not os.path.exists(spec_path):
         return
     try:
         with open(spec_path, "r", encoding="utf-8") as f:
             content = f.read()
-        host = public_url.replace("https://", "").replace("http://", "")
-        content = re.sub(r'host:\s*"[^"]*"', f'host: "{host}"', content)
+        content = re.sub(
+            r'(url:\s*)https?://[^\s]+',
+            rf'\g<1>{public_url}',
+            content,
+            count=1,
+        )
         with open(spec_path, "w", encoding="utf-8") as f:
             f.write(content)
-        _log("ngrok", f"✅ openapi.yaml 已更新 host → {host}", "green")
+        _log("ngrok", f"✅ openapi.yaml 已更新 servers.url → {public_url}", "green")
     except Exception as e:
         _log("ngrok", f"⚠ 更新 openapi.yaml 失败: {e}", "yellow")
 
