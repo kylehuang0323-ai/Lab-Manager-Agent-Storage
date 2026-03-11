@@ -4,6 +4,7 @@ Excel 数据层 — 库存表 + 出入库记录表的 CRUD 操作
 """
 
 import os
+import re
 import threading
 from datetime import datetime
 from typing import Optional
@@ -152,15 +153,28 @@ def get_item(item_id: str) -> Optional[dict]:
     return None
 
 
+def _tokenize(text: str) -> list[str]:
+    """将关键词拆分为 token：先按空格拆，再按 CJK / Latin 边界拆"""
+    parts = text.lower().split()
+    tokens = []
+    for p in parts:
+        tokens.extend(re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]+|[a-z0-9]+', p))
+    return tokens
+
+
 def search_items(keyword: str) -> list[dict]:
-    """模糊搜索（名称/分类/位置）"""
-    keyword = keyword.lower()
-    results = []
+    """模糊搜索（名称/分类/位置），按 token 命中数排序，至少命中一个即返回"""
+    tokens = _tokenize(keyword)
+    if not tokens:
+        return []
+    scored = []
     for item in get_all_items():
         searchable = f"{item.get('name','')} {item.get('category','')} {item.get('location','')}".lower()
-        if keyword in searchable:
-            results.append(item)
-    return results
+        hits = sum(1 for tok in tokens if tok in searchable)
+        if hits:
+            scored.append((hits, item))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [item for _, item in scored]
 
 
 def get_categories() -> list[str]:
