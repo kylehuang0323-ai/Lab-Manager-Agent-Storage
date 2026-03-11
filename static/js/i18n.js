@@ -72,6 +72,7 @@ const I18N = {
         optOut: '出库',
         btnQuery: '查询',
         thRecipient: '领用人',
+        thBalanceAfter: '结余',
         emptyTx: '暂无出入库记录',
         loadTxFail: '加载记录失败',
 
@@ -233,6 +234,7 @@ const I18N = {
         optOut: 'Stock Out',
         btnQuery: 'Search',
         thRecipient: 'Recipient',
+        thBalanceAfter: 'Balance',
         emptyTx: 'No transaction records',
         loadTxFail: 'Failed to load records',
 

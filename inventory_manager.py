@@ -25,7 +25,7 @@ INVENTORY_HEADERS = [
 
 TRANSACTION_HEADERS = [
     "tx_id", "item_id", "item_name", "type", "quantity",
-    "operator", "recipient", "note", "timestamp",
+    "balance_after", "operator", "recipient", "note", "timestamp",
 ]
 
 
@@ -34,17 +34,33 @@ TRANSACTION_HEADERS = [
 # --------------------------------------------------
 
 def _ensure_workbook(filepath: str, headers: list) -> None:
-    """如果文件不存在则创建并写入表头"""
-    if os.path.exists(filepath):
+    """如果文件不存在则创建并写入表头；若已存在则同步缺失的列"""
+    if not os.path.exists(filepath):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws.append(headers)
+        for i, h in enumerate(headers, 1):
+            ws.column_dimensions[ws.cell(1, i).column_letter].width = max(len(h) + 4, 14)
+        wb.save(filepath)
         return
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Sheet1"
-    ws.append(headers)
-    # 设置列宽
-    for i, h in enumerate(headers, 1):
-        ws.column_dimensions[ws.cell(1, i).column_letter].width = max(len(h) + 4, 14)
-    wb.save(filepath)
+    # 已存在时检查是否需要补列
+    with _lock:
+        wb = load_workbook(filepath)
+        ws = wb.active
+        existing = [cell.value for cell in ws[1]]
+        changed = False
+        for h in headers:
+            if h not in existing:
+                col = len(existing) + 1
+                ws.cell(row=1, column=col, value=h)
+                ws.column_dimensions[ws.cell(1, col).column_letter].width = max(len(h) + 4, 14)
+                existing.append(h)
+                changed = True
+        if changed:
+            wb.save(filepath)
+        else:
+            wb.close()
 
 
 def init_data_files():
@@ -58,27 +74,31 @@ def init_data_files():
 # --------------------------------------------------
 
 def _read_all_rows(filepath: str, headers: list) -> list[dict]:
-    """读取所有数据行，返回 dict 列表"""
+    """读取所有数据行，返回 dict 列表（按 Excel 实际表头匹配，兼容列变更）"""
     if not os.path.exists(filepath):
         return []
     with _lock:
         wb = load_workbook(filepath, read_only=True)
         ws = wb.active
         rows = []
+        # 读取实际表头，按表头名匹配而非固定位置
+        file_headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
         for row in ws.iter_rows(min_row=2, values_only=True):
             if all(v is None for v in row):
                 continue
-            rows.append(dict(zip(headers, row)))
+            raw = dict(zip(file_headers, row))
+            rows.append({h: raw.get(h) for h in headers})
         wb.close()
     return rows
 
 
 def _append_row(filepath: str, headers: list, data: dict) -> None:
-    """追加一行数据"""
+    """追加一行数据（按 Excel 文件实际表头顺序写入）"""
     with _lock:
         wb = load_workbook(filepath)
         ws = wb.active
-        ws.append([data.get(h, "") for h in headers])
+        file_headers = [cell.value for cell in ws[1]]
+        ws.append([data.get(h, "") for h in file_headers])
         wb.save(filepath)
 
 
@@ -195,6 +215,7 @@ def stock_in(item_id: str, quantity: int, operator: str = "系统", note: str = 
         "item_name": item.get("name", ""),
         "type": "in",
         "quantity": quantity,
+        "balance_after": new_qty,
         "operator": operator,
         "recipient": "",
         "note": note,
@@ -230,6 +251,7 @@ def stock_out(item_id: str, quantity: int, operator: str = "系统",
         "item_name": item.get("name", ""),
         "type": "out",
         "quantity": quantity,
+        "balance_after": new_qty,
         "operator": operator,
         "recipient": recipient,
         "note": note,
@@ -247,7 +269,7 @@ def get_transactions(item_id: str = None, tx_type: str = None,
         rows = [r for r in rows if str(r.get("item_id")) == item_id]
     if tx_type:
         rows = [r for r in rows if r.get("type") == tx_type]
-    rows.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+    rows.sort(key=lambda r: r.get("timestamp") or "", reverse=True)
     return rows[:limit]
 
 

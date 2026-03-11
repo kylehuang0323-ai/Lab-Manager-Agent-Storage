@@ -135,13 +135,9 @@ function renderRecentTxTable(records) {
                 ? `<span class="badge badge-green">${t('badgeIn')}</span>`
                 : `<span class="badge badge-red">${t('badgeOut')}</span>`}</td>
             <td>${esc(r.quantity)}</td>
+            <td><strong>${r.balance_after != null ? esc(r.balance_after) : '—'}</strong></td>
             <td>${esc(r.operator)}</td>
-            <td>${esc(r.timestamp)}</td>
-        </tr>
-    `).join('');
-}
-
-function renderLowStockPanel(items) {
+            <td>${esc(r.timestamp)}</td>(items) {
     const panel = document.getElementById('dashLowStockList');
     if (!items.length) {
         panel.innerHTML = `<div class="empty-state">${t('noLowStock')}</div>`;
@@ -338,6 +334,7 @@ function renderTransactionsTable(records) {
                 ? `<span class="badge badge-green">${t('badgeIn')}</span>`
                 : `<span class="badge badge-red">${t('badgeOut')}</span>`}</td>
             <td>${esc(r.quantity)}</td>
+            <td><strong>${r.balance_after != null ? esc(r.balance_after) : '—'}</strong></td>
             <td>${esc(r.operator)}</td>
             <td>${esc(r.recipient) || '—'}</td>
             <td>${esc(r.timestamp)}</td>
