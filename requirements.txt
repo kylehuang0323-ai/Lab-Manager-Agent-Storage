@@ -7,3 +7,5 @@ pandas>=2.0.0
 botbuilder-core>=4.14.0
 botbuilder-integration-aiohttp>=4.14.0
 aiohttp>=3.9.0
+flaskwebgui>=1.1.0
+waitress>=3.0.0
