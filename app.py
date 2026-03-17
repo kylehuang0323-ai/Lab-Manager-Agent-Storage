@@ -5,6 +5,7 @@ Flask 主应用 — 提供 Web 管理后台 + Agent 对话 API
 
 from flask import Flask, render_template, jsonify, request, session, send_file
 import os
+import sys
 
 import config
 import agent_engine
@@ -14,7 +15,17 @@ import alert_service
 import batch_importer
 import asset_manager as am
 
-app = Flask(__name__)
+# PyInstaller frozen 模式下，模板和静态文件在 _internal/ 中
+# Flask 默认从 __file__ 所在目录查找，需要显式指定
+if getattr(sys, "frozen", False):
+    _internal = os.path.join(os.path.dirname(sys.executable), "_internal")
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(_internal, "templates"),
+        static_folder=os.path.join(_internal, "static"),
+    )
+else:
+    app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
 
 
@@ -188,8 +199,7 @@ def api_alert_stream():
 # 批量导入 API
 # --------------------------------------------------
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR = config.UPLOAD_DIR
 
 
 @app.route("/api/import/template")

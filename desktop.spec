@@ -3,6 +3,9 @@
 PyInstaller 打包配置
 运行: pyinstaller desktop.spec
 输出: dist/LabManager/LabManager.exe
+
+首次运行 .exe 时会自动在同级目录创建 data/, exports/, uploads/ 文件夹
+将 .env 文件放在 .exe 同级目录即可配置 API Key
 """
 
 import os
@@ -19,14 +22,41 @@ a = Analysis(
         (".env", "."),
     ],
     hiddenimports=[
+        # Flask & web
         "flask",
-        "openpyxl",
-        "openai",
-        "dotenv",
-        "dateutil",
-        "pandas",
+        "flask.json",
         "flaskwebgui",
+        "waitress",
+        "waitress.task",
+        "waitress.channel",
         "engineio.async_drivers.threading",
+        # Excel
+        "openpyxl",
+        "openpyxl.styles",
+        "openpyxl.utils",
+        "openpyxl.cell",
+        # AI / LLM
+        "openai",
+        # Date
+        "dateutil",
+        "dateutil.relativedelta",
+        # Env
+        "dotenv",
+    ],
+    excludes=[
+        # 全局安装但项目不使用的大型包 — 排除以减小体积
+        "torch", "torchvision", "torchaudio",
+        "numpy", "pandas", "scipy", "matplotlib",
+        "pytest", "py", "_pytest",
+        "tkinter", "unittest",
+        "PIL", "cv2",
+        "IPython", "notebook", "jupyter",
+        "sphinx", "docutils",
+        "pyinstaller", "PyInstaller",
+        "tensorboard", "tensorflow",
+        "botbuilder",
+        "aiohttp",
+        "uvicorn", "uvloop",
     ],
     noarchive=False,
 )
